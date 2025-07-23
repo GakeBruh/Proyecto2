@@ -1,0 +1,47 @@
+## ignore files for fastapi project
+# Python cache files
+__pycache__/
+*.py[cod]
+# Virtual environment
+venv/
+# Environment variables
+.env
+# Database files
+*.db
+# Logs
+*.log
+# IDE specific files
+.vscode/
+.idea/
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+# Coverage reports
+htmlcov/
+.coverage
+# Migrations
+migrations/
+# Static files
+static/
+# Media files
+media/
+# Docker files
+Dockerfile
+docker-compose.yml
+# FastAPI specific files
+*.json
+*.yaml
+# Miscellaneous
+*.swp
+*.swo
+*.bak
+*.tmp
+# Type checking files
+mypy_cache/
+# Test files
+tests/
+# Documentation files
+docs/
+# Configuration files
+*.cfg
+*.ini
+secrets/
