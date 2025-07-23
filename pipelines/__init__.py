@@ -3,13 +3,14 @@ Módulo de pipelines de MongoDB optimizadas
 """
 
 from .box_pipelines import (
-    get_bundle_validation_pipeline,
-    get_bundle_with_catalog_type_pipeline,
-    get_bundle_products_pipeline,
-    get_product_validation_pipeline,
-    get_bundle_detail_with_product_pipeline,
-    check_existing_product_in_bundle_pipeline
+    get_box_validation_pipeline,
+    get_box_with_catalog_type_pipeline,
+    get_box_products_pipeline,
+    get_product_validation_pipeline, 
+    get_box_detail_with_product_pipeline,
+    check_existing_product_in_box_pipeline
 )
+
 
 from .catalog_pipelines import (
     get_catalog_with_type_pipeline,
@@ -33,13 +34,13 @@ from .order_detail_pipelines import (
 )
 
 __all__ = [
-    # Bundle pipelines
-    "get_bundle_validation_pipeline",
-    "get_bundle_with_catalog_type_pipeline", 
-    "get_bundle_products_pipeline",
+    # Box pipelines
+    "get_box_validation_pipeline",
+    "get_box_with_catalog_type_pipeline", 
+    "get_box_products_pipeline",
     "get_product_validation_pipeline",
-    "get_bundle_detail_with_product_pipeline",
-    "check_existing_product_in_bundle_pipeline",
+    "get_box_detail_with_product_pipeline",
+    "check_existing_product_in_box_pipeline",
     
     # Catalog pipelines
     "get_catalog_with_type_pipeline",
