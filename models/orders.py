@@ -9,30 +9,30 @@ class Order(BaseModel):
     )
 
     id_user: str = Field(
-        description="ID del usuario que realizó la orden",
+        description="ID del usuario que realizó el pedido",
         examples=["507f1f77bcf86cd799439011"]
     )
 
     date: datetime = Field(
         default_factory=datetime.utcnow,
-        description="Fecha de creación de la orden"
+        description="Fecha de creación del pedido"
     )
 
     subtotal: float = Field(
-        description="Subtotal de la orden",
+        description="Subtotal del pedido",
         gt=0,
         examples=[150.50, 99.99]
     )
 
     taxes: float = Field(
-        description="Impuestos de la orden",
+        description="Impuestos del pedido",
         ge=0,
         examples=[15.05, 9.99]
     )
 
     discount: float = Field(
         default=0.0,
-        description="Descuento aplicado a la orden",
+        description="Descuento aplicado al pedido",
         ge=0,
         examples=[0.0, 10.50]
     )
@@ -55,7 +55,7 @@ class Order(BaseModel):
 
 
 class CreateOrder(BaseModel):
-    """Modelo para crear una orden - las órdenes se crean vacías"""
+    """Modelo para crear una orden """
     pass  # No necesita campos, todo se calcula automáticamente
 
     class Config:
