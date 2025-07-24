@@ -6,7 +6,7 @@ from datetime import datetime
 class OrderDetail(BaseModel):
     id: Optional[str] = Field(
         default=None,
-        description="MongoDB ID - Se genera automáticamente desde el _id de MongoDB"
+        description="MongoDB ID"
     )
 
     id_order: str = Field(

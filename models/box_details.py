@@ -4,7 +4,7 @@ from typing import Optional
 class BoxDetail(BaseModel):
     id: Optional[str] = Field(
         default=None,
-        description="MongoDB ID - Se genera automáticamente desde el _id de MongoDB, no es necesario enviarlo en POST"
+        description="MongoDB ID"
     )
 
     id_box: str = Field(

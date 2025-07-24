@@ -7,7 +7,7 @@ class OrderStatusRecord(BaseModel):
     """Modelo para un registro de cambio de estado de orden (colección order_status)"""
     id: Optional[str] = Field(
         default=None,
-        description="MongoDB ID - Se genera automáticamente desde el _id de MongoDB"
+        description="MongoDB ID"
     )
     
     id_order: str = Field(

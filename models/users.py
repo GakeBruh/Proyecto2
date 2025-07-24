@@ -5,19 +5,19 @@ import re
 class User(BaseModel):
     id: Optional[str] = Field(
         default=None,
-        description="MongoDB ID - Se genera automáticamente desde el _id de MongoDB, no es necesario enviarlo en POST"
+        description="MongoDB ID"
     )
 
     name: str = Field(
         description="User First Name",
         pattern= r"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$",
-        examples=["Juan", "María José"]
+        examples=["Ana", "Kevin Gabriel"]
     )
 
     lastname: str = Field(
         description="User Last Name",
         pattern= r"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$",
-        examples=["Pérez", "García López"]
+        examples=["Flores Carrasco", "Rivera"]
     )
 
     email: str = Field(
@@ -38,8 +38,9 @@ class User(BaseModel):
     password: str = Field(
         min_length=8,
         max_length=64,
-        description="Contraseña del usuario, debe tener entre 8 y 64 caracteres incluir por lo menos un numero, por lo menos una mayuscula y por lo menos un caracter especial.",
-        examples=["MiPassword123!"]
+        description="Contraseña del usuario, debe tener entre 8 y 64 caracteres incluir por lo menos un numero," \
+        " por lo menos una mayuscula y por lo menos un caracter especial.",
+        examples=["Contraseñ@123"]
     )
 
     @field_validator('password')

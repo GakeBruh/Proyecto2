@@ -9,12 +9,12 @@ from utils.security import validateadmin
 
 router = APIRouter()
 
-@router.get("/box/{box_id}", response_model=BoxWithProducts, tags=["📦 Box Details"])
+@router.get("/box/{box_id}", response_model=BoxWithProducts, tags=["Box Details"])
 async def get_box_with_products_endpoint(box_id: str) -> BoxWithProducts:
     """Obtener información completa del box con todos sus productos"""
     return await get_box_with_products(box_id)
 
-@router.post("/boxes/{box_id}/product", tags=["📦 Box Details"])
+@router.post("/boxes/{box_id}/product", tags=["Box Details"])
 @validateadmin
 async def add_product_to_box_endpoint(
     box_id: str, 

@@ -11,7 +11,7 @@ class CatalogType(BaseModel):
     description: str = Field(
         description="Descripción del tipo de catálogo",
         pattern=r"^[0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$",
-        examples=["Product","Bundle"]
+        examples=["Product","Special Box"]
     )
 
     active: bool = Field(

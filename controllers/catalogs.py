@@ -21,7 +21,7 @@ async def create_catalog(catalog: Catalog) -> Catalog:
         catalog_type_result = list(catalog_types_coll.aggregate(catalog_type_pipeline))
 
         if not catalog_type_result:
-            raise HTTPException(status_code=400, detail="Catalog type not found or inactive")
+            raise HTTPException(status_code=400, detail="Tipo de Catalogo no encontrado or inactive")
 
         catalog.name = catalog.name.strip()
         catalog.description = catalog.description.strip()
@@ -29,7 +29,7 @@ async def create_catalog(catalog: Catalog) -> Catalog:
         # Verificar si ya existe un catálogo con el mismo nombre
         existing_catalog = coll.find_one({"name": {"$regex": f"^{catalog.name}$", "$options": "i"}})
         if existing_catalog:
-            raise HTTPException(status_code=400, detail="Catalog with this name already exists")
+            raise HTTPException(status_code=400, detail="Ya existe un catalogo con este nombre")
 
         catalog_dict = catalog.model_dump(exclude={"id"})
         inserted = coll.insert_one(catalog_dict)
@@ -78,7 +78,7 @@ async def get_catalog_by_id(catalog_id: str) -> dict:
         catalog_result = list(coll.aggregate(pipeline))
         
         if not catalog_result:
-            raise HTTPException(status_code=404, detail="Catalog not found")
+            raise HTTPException(status_code=404, detail="Catalogo no encontrado")
             
         return catalog_result[0]
     except HTTPException:
@@ -127,7 +127,7 @@ async def get_catalogs_by_type(catalog_type_id: str) -> list[Catalog]:
         # Validar que el catalog_type existe
         catalog_type = catalog_types_coll.find_one({"_id": ObjectId(catalog_type_id)})
         if not catalog_type:
-            raise HTTPException(status_code=404, detail="Catalog type not found")
+            raise HTTPException(status_code=404, detail="Tipo de Catalogo no encontrado")
 
         catalogs = []
         for doc in coll.find({"id_catalog_type": catalog_type_id}):
@@ -147,7 +147,7 @@ async def update_catalog(catalog_id: str, catalog: Catalog) -> Catalog:
         # Validar que el catalog_type existe
         catalog_type = catalog_types_coll.find_one({"_id": ObjectId(catalog.id_catalog_type)})
         if not catalog_type:
-            raise HTTPException(status_code=400, detail="Catalog type not found")
+            raise HTTPException(status_code=400, detail="Tipo de Catalogo no encontrado")
 
         catalog.name = catalog.name.strip()
         catalog.description = catalog.description.strip()
@@ -158,14 +158,14 @@ async def update_catalog(catalog_id: str, catalog: Catalog) -> Catalog:
             "_id": {"$ne": ObjectId(catalog_id)}
         })
         if existing_catalog:
-            raise HTTPException(status_code=400, detail="Catalog with this name already exists")
+            raise HTTPException(status_code=400, detail="Ya existe un catalogo con este nombre")
 
         result = coll.update_one(
             {"_id": ObjectId(catalog_id)},
             {"$set": catalog.model_dump(exclude={"id"})}
         )
         if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Catalog not found")
+            raise HTTPException(status_code=404, detail="Catalogo no encontrado")
 
         return await get_catalog_by_id(catalog_id)
     except HTTPException:
@@ -180,11 +180,11 @@ async def deactivate_catalog(catalog_id: str) -> Catalog:
             {"$set": {"active": False}}
         )
         if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Catalog not found")
+            raise HTTPException(status_code=404, detail="Catalogo no encontrado")
 
         return await get_catalog_by_id(catalog_id)
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deactivating catalog: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al desactivar el catalogo ingresado: {str(e)}")
 

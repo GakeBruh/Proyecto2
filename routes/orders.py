@@ -28,7 +28,7 @@ async def create_new_order(
     return result
 
 
-@router.get("/", tags=["📦 Orders"])
+@router.get("/", tags=["Orders"])
 @validateuser
 async def get_all_orders(
     request: Request,
@@ -52,7 +52,7 @@ async def get_all_orders(
     return result
 
 
-@router.get("/{order_id}", tags=["📦 Orders"])
+@router.get("/{order_id}", tags=["Orders"])
 @validateuser
 async def get_order_details(
     request: Request,
@@ -79,7 +79,7 @@ async def get_order_details(
     return result
 
 
-@router.put("/{order_id}/status", summary="Finalizar orden (cambiar a Ordered)", tags=["📦 Orders"])
+@router.put("/{order_id}/status", summary="Finalizar orden (cambiar a Ordered)", tags=["Orders"])
 @validateuser
 async def finalize_order(
     request: Request,
@@ -109,7 +109,7 @@ async def finalize_order(
     return result
 
 
-@router.post("/{order_id}/status", tags=["📦 Orders"])
+@router.post("/{order_id}/status", tags=["Orders"])
 @validateadmin
 async def change_order_status_admin(
     request: Request,

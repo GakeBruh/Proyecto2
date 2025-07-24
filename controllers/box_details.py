@@ -48,14 +48,14 @@ async def get_box_with_products(box_id: str) -> BoxWithProducts:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching box with products: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener el box con productos: {str(e)}")
 
 async def add_product_to_box(box_id: str, product_data: AddProductToBox) -> dict:
     """Agregar un producto al box"""
     try:
         # Verificar que no se esté agregando el mismo box como producto (evitar recursión)
         if product_data.id_producto == box_id:
-            raise HTTPException(status_code=400, detail="Cannot add box to itself")
+            raise HTTPException(status_code=400, detail="No se puede agregar otra box asi misma")
 
         # Validar box (existe, activo y es de tipo box) en una sola pipeline
         box_pipeline = get_box_validation_pipeline(box_id)
@@ -71,7 +71,8 @@ async def add_product_to_box(box_id: str, product_data: AddProductToBox) -> dict
         product_result = list(catalogs_coll.aggregate(product_pipeline))
 
         if not product_result:
-            raise HTTPException(status_code=404, detail="Producto no encontrado, inactivo o no es de tipo producto")
+            raise HTTPException(status_code=404, detail="Producto no encontrado, inactivo o " \
+            "no es de tipo producto")
 
         product = product_result[0]
 
@@ -116,7 +117,7 @@ async def add_product_to_box(box_id: str, product_data: AddProductToBox) -> dict
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error adding product to box: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al añadir este producto a la box: {str(e)}")
 
 async def remove_product_from_box(box_id: str, box_detail_id: str) -> dict:
     """Remover un producto del box"""
@@ -126,7 +127,7 @@ async def remove_product_from_box(box_id: str, box_detail_id: str) -> dict:
         box_detail_result = list(box_details_coll.aggregate(box_detail_pipeline))
         
         if not box_detail_result:
-            raise HTTPException(status_code=404, detail="Product not found in box")
+            raise HTTPException(status_code=404, detail="Prudcto no encontrado en la box")
 
         box_detail = box_detail_result[0]
 
@@ -134,10 +135,10 @@ async def remove_product_from_box(box_id: str, box_detail_id: str) -> dict:
         result = box_details_coll.delete_one({"_id": ObjectId(box_detail_id)})
         
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Product not found in box")
+            raise HTTPException(status_code=404, detail="Prudcto no encontrado en la box")
 
         return {
-            "message": "Product removed from box successfully",
+            "message": "Producto removido de la box exitosamente",
             "box_id": box_detail["id_box"],
             "product_id": box_detail["id_producto"],
             "product_name": box_detail["product_name"],
@@ -147,4 +148,4 @@ async def remove_product_from_box(box_id: str, box_detail_id: str) -> dict:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error removing product from box: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al remover productos de la box: {str(e)}")
