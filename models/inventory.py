@@ -6,7 +6,7 @@ import re
 class Inventory(BaseModel):
     id: Optional[str] = Field(
         default=None,
-        description="ID generado automáticamente por MongoDB"
+        description="ID MongoDB"
     )
 
     catalog_id: str = Field(

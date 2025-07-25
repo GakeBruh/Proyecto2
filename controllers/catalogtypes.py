@@ -68,7 +68,6 @@ async def update_catalog_type(catalog_type_id: str, catalog_type: CatalogType) -
         raise HTTPException(status_code=500, detail=f"Error al actualizar el tipo de catalogo: {str(e)}")
 
 
-#insted of delete_catalog_type we can deactivate it
 async def deactivate_catalog_type(catalog_type_id: str) -> CatalogType:
     try:
         result = coll.update_one(

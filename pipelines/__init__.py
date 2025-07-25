@@ -11,7 +11,6 @@ from .box_pipelines import (
     check_existing_product_in_box_pipeline
 )
 
-
 from .catalog_pipelines import (
     get_catalog_with_type_pipeline,
     get_catalogs_by_type_pipeline,
@@ -31,6 +30,13 @@ from .order_pipelines import (
 from .order_detail_pipelines import (
     get_order_details_pipeline,
     get_order_detail_by_id_pipeline
+)
+
+from .inventory_pipelines import (
+    get_inventory_by_id_pipeline,
+    get_all_inventory_pipeline,
+    validate_catalog_pipeline,
+    get_total_stock_pipeline
 )
 
 __all__ = [
@@ -58,5 +64,11 @@ __all__ = [
     
     # Order detail pipelines
     "get_order_details_pipeline",
-    "get_order_detail_by_id_pipeline"
+    "get_order_detail_by_id_pipeline",
+
+    # Inventory pipelines
+    "get_inventory_by_id_pipeline",
+    "get_all_inventory_pipeline",
+    "validate_catalog_pipeline",
+    "get_total_stock_pipeline"
 ]

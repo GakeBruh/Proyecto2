@@ -40,19 +40,6 @@ async def create_catalog(catalog: Catalog) -> Catalog:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating catalog: {str(e)}")
 
-async def get_catalogs() -> list[Catalog]:
-    try:
-        catalogs = []
-        for doc in coll.find():
-            # Mapear _id a id para el modelo Pydantic
-            doc['id'] = str(doc['_id'])
-            del doc['_id']
-            catalog = Catalog(**doc)
-            catalogs.append(catalog)
-        return catalogs
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching catalogs: {str(e)}")
-
 async def get_catalogs(skip: int = 0, limit: int = 10) -> dict:
     try:
         # Usar pipeline optimizada para obtener catálogos con información del tipo
@@ -119,26 +106,6 @@ async def get_catalogs_by_type(catalog_type_description: str, skip: int = 0, lim
             "limit": limit,
             "catalog_type": catalog_type_description
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching catalogs by type: {str(e)}")
-
-async def get_catalogs_by_type(catalog_type_id: str) -> list[Catalog]:
-    try:
-        # Validar que el catalog_type existe
-        catalog_type = catalog_types_coll.find_one({"_id": ObjectId(catalog_type_id)})
-        if not catalog_type:
-            raise HTTPException(status_code=404, detail="Tipo de Catalogo no encontrado")
-
-        catalogs = []
-        for doc in coll.find({"id_catalog_type": catalog_type_id}):
-            # Mapear _id a id para el modelo Pydantic
-            doc['id'] = str(doc['_id'])
-            del doc['_id']
-            catalog = Catalog(**doc)
-            catalogs.append(catalog)
-        return catalogs
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching catalogs by type: {str(e)}")
 

@@ -14,12 +14,11 @@ catalogs_coll = get_collection("catalogs")
 
 async def create_inventory(inventory: Inventory) -> Inventory:
     try:
-        # Validar que el catálogo al que pertenece existe y está activo
         validation_pipeline = validate_catalog_pipeline(inventory.catalog_id)
         catalog_result = list(catalogs_coll.aggregate(validation_pipeline))
 
         if not catalog_result:
-            raise HTTPException(status_code=400, detail="Catalog not found or inactive")
+            raise HTTPException(status_code=400, detail="Catalogo no encontrado o inactivo")
 
         inventory_dict = inventory.model_dump(exclude={"id"})
         result = coll.insert_one(inventory_dict)
@@ -28,7 +27,7 @@ async def create_inventory(inventory: Inventory) -> Inventory:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating inventory: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creando el inventario: {str(e)}")
 
 async def get_inventories() -> dict:
     try:
@@ -40,7 +39,7 @@ async def get_inventories() -> dict:
             "total": total
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching inventories: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener el inventario: {str(e)}")
 
 async def get_inventory_by_id(inventory_id: str) -> dict:
     try:
@@ -48,13 +47,13 @@ async def get_inventory_by_id(inventory_id: str) -> dict:
         results = list(coll.aggregate(pipeline))
 
         if not results:
-            raise HTTPException(status_code=404, detail="Inventory not found")
+            raise HTTPException(status_code=404, detail="Inventario no encontrado")
 
         return results[0]
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching inventory: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener el inventario: {str(e)}")
 
 async def update_inventory_quantity(inventory_id: str, quantity: int) -> Inventory:
     try:
@@ -64,7 +63,7 @@ async def update_inventory_quantity(inventory_id: str, quantity: int) -> Invento
         )
 
         if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Inventory not found or not modified")
+            raise HTTPException(status_code=404, detail="Inventario no encontrado o no modificado")
 
         updated_pipeline = get_inventory_by_id_pipeline(inventory_id)
         updated = list(coll.aggregate(updated_pipeline))[0]
@@ -79,19 +78,18 @@ async def update_inventory_quantity(inventory_id: str, quantity: int) -> Invento
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating inventory: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al actualizar el inventario: {str(e)}")
 
 async def delete_inventory(inventory_id: str):
     try:
         result = coll.delete_one({"_id": ObjectId(inventory_id)})
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Inventory not found")
+            raise HTTPException(status_code=404, detail="Inventario no encontrado")
 
-        return {"message": "Inventory deleted successfully"}
-    except HTTPException:
+        return {"message": "Inventario eliminado"}
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting inventory: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error eliminando el inventario: {str(e)}")
 
 async def get_total_stock_by_catalog(catalog_id: str) -> dict:
     try:
@@ -103,4 +101,4 @@ async def get_total_stock_by_catalog(catalog_id: str) -> dict:
 
         return stock_result[0]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error calculating total stock: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error calculando el total del stock: {str(e)}")
