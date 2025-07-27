@@ -1,11 +1,10 @@
-"""
-Pipelines de MongoDB para operaciones con inventario
-"""
+from bson import ObjectId
+
 from bson import ObjectId
 
 def get_inventory_by_id_pipeline(inventory_id: str) -> list:
     """
-    Pipeline para obtener un lote de inventario con información del catálogo
+    Pipeline para obtener un inventario por su ID con detalles del catálogo
     """
     return [
         {"$match": {"_id": ObjectId(inventory_id)}},
@@ -20,19 +19,25 @@ def get_inventory_by_id_pipeline(inventory_id: str) -> list:
         }},
         {"$unwind": "$catalog"},
         {"$project": {
+            "_id": 0,
             "id": {"$toString": "$_id"},
             "catalog_id": {"$toString": "$catalog_id"},
             "catalog_name": "$catalog.name",
             "quantity": "$quantity",
             "batch_name": "$batch_name",
-            "date": "$date"
+            "entry_date": {
+                "$cond": [
+                    {"$eq": [{"$type": "$entry_date"}, "string"]},
+                    "$entry_date",
+                    {"$dateToString": {"format": "%Y-%m-%d", "date": "$entry_date"}}
+                ]
+            }
         }}
     ]
 
-def get_all_inventory_pipeline() -> list:
-    """
-    Pipeline para obtener todos los lotes de inventario con información del catálogo
-    """
+
+def get_all_inventory_pipeline(skip: int = 0, limit: int = 10) -> list:
+
     return [
         {"$addFields": {
             "catalog_obj_id": {"$toObjectId": "$catalog_id"}
@@ -45,24 +50,28 @@ def get_all_inventory_pipeline() -> list:
         }},
         {"$unwind": "$catalog"},
         {"$project": {
+            "_id": 0,
             "id": {"$toString": "$_id"},
             "catalog_id": {"$toString": "$catalog_id"},
             "catalog_name": "$catalog.name",
             "quantity": "$quantity",
             "batch_name": "$batch_name",
-            "date": "$date"
-        }}
+            "entry_date": {
+                "$cond": [
+                    {"$eq": [{"$type": "$entry_date"}, "string"]},
+                    "$entry_date",
+                    {"$dateToString": {"format": "%Y-%m-%d", "date": "$entry_date"}}
+                ]
+            }
+        }},
+        {"$skip": skip},
+        {"$limit": limit}
     ]
 
+
 def validate_catalog_pipeline(catalog_id: str) -> list:
-    """
-    Pipeline para validar que un catálogo existe y está activo
-    """
     return [
-        {"$match": {
-            "_id": ObjectId(catalog_id),
-            "active": True
-        }},
+        {"$match": {"_id": ObjectId(catalog_id), "active": True}},
         {"$project": {
             "id": {"$toString": "$_id"},
             "name": "$name"
@@ -70,9 +79,6 @@ def validate_catalog_pipeline(catalog_id: str) -> list:
     ]
 
 def get_total_stock_pipeline(catalog_id: str) -> list:
-    """
-    Pipeline para obtener el stock total (sumatoria de quantity) de un catálogo
-    """
     return [
         {"$match": {"catalog_id": catalog_id}},
         {"$group": {

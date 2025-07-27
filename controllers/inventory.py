@@ -2,6 +2,7 @@ from models.inventory import Inventory
 from utils.mongodb import get_collection
 from fastapi import HTTPException
 from bson import ObjectId
+from datetime import datetime, date
 from pipelines.inventory_pipelines import (
     get_all_inventory_pipeline,
     get_inventory_by_id_pipeline,
@@ -21,14 +22,20 @@ async def create_inventory(inventory: Inventory) -> Inventory:
             raise HTTPException(status_code=400, detail="Catalogo no encontrado o inactivo")
 
         inventory_dict = inventory.model_dump(exclude={"id"})
+
+        # Convierte date a string para MongoDB
+        if isinstance(inventory_dict.get("entry_date"), date):
+            inventory_dict["entry_date"] = inventory_dict["entry_date"].isoformat()
+
         result = coll.insert_one(inventory_dict)
         inventory.id = str(result.inserted_id)
         return inventory
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creando el inventario: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating inventory: {str(e)}")
 
+    
 async def get_inventories() -> dict:
     try:
         pipeline = get_all_inventory_pipeline()
@@ -39,12 +46,12 @@ async def get_inventories() -> dict:
             "total": total
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener el inventario: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching inventories: {str(e)}")
 
 async def get_inventory_by_id(inventory_id: str) -> dict:
     try:
         pipeline = get_inventory_by_id_pipeline(inventory_id)
-        results = list(coll.aggregate(pipeline))
+        results =  coll.aggregate(pipeline).to_list(length=None)
 
         if not results:
             raise HTTPException(status_code=404, detail="Inventario no encontrado")
@@ -55,41 +62,41 @@ async def get_inventory_by_id(inventory_id: str) -> dict:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener el inventario: {str(e)}")
 
-async def update_inventory_quantity(inventory_id: str, quantity: int) -> Inventory:
+async def update_inventory_quantity(inventory_id: str, quantity: int, batch_name: str) -> Inventory:
     try:
-        result = coll.update_one(
+        result = await coll.update_one(
             {"_id": ObjectId(inventory_id)},
-            {"$set": {"quantity": quantity}}
+            {"$set": {
+                "quantity": quantity,
+                "batch_name": batch_name
+            }}
         )
 
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Inventario no encontrado")
+        
         if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Inventario no encontrado o no modificado")
+           raise HTTPException(status_code=400, detail="No hubo cambios en el inventario")
 
         updated_pipeline = get_inventory_by_id_pipeline(inventory_id)
-        updated = list(coll.aggregate(updated_pipeline))[0]
+        updated_list = await coll.aggregate(updated_pipeline).to_list(length=None)
+
+        if not updated_list:
+            raise HTTPException(status_code=404, detail="Inventario no encontrado tras actualizar")
+
+        updated = updated_list[0]
 
         return Inventory(**{
-            "id": updated["id"],
+            "id": updated.get("id") or str(updated.get("_id")),
             "catalog_id": updated["catalog_id"],
             "quantity": updated["quantity"],
             "batch_name": updated["batch_name"],
-            "date": updated["date"]
+            "entry_date": updated["entry_date"]
         })
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al actualizar el inventario: {str(e)}")
-
-async def delete_inventory(inventory_id: str):
-    try:
-        result = coll.delete_one({"_id": ObjectId(inventory_id)})
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Inventario no encontrado")
-
-        return {"message": "Inventario eliminado"}
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error eliminando el inventario: {str(e)}")
 
 async def get_total_stock_by_catalog(catalog_id: str) -> dict:
     try:
@@ -101,4 +108,20 @@ async def get_total_stock_by_catalog(catalog_id: str) -> dict:
 
         return stock_result[0]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error calculando el total del stock: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error calculating total stock: {str(e)}")
+
+async def descontar_inventario(product_id: str, quantity: int):
+    if quantity <= 0:
+        raise HTTPException(400, "Cantidad a descontar debe ser mayor que cero")
+
+    inventory = await coll.find_one({"catalog_id": product_id})
+    if not inventory:
+        raise HTTPException(404, f"Inventario no encontrado para producto {product_id}")
+
+    new_quantity = inventory.get("quantity", 0) - quantity
+    if new_quantity < 0:
+        raise HTTPException(400, f"No hay suficiente inventario para el producto {product_id}")
+
+    result = await coll.update_one({"_id": inventory["_id"]}, {"$set": {"quantity": new_quantity}})
+    if result.modified_count == 0:
+        raise HTTPException(500, "Error actualizando el inventario")

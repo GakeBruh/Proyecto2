@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 import re
 
 class Inventory(BaseModel):

@@ -2,8 +2,13 @@ from models.order_statuses import OrderStatus
 from utils.mongodb import get_collection
 from fastapi import HTTPException
 from bson import ObjectId
+from datetime import datetime
 
+orders_collection = get_collection("orders")
+order_details_collection = get_collection("order_details")
+from controllers.inventory import descontar_inventario
 coll = get_collection("order_statuses")
+
 
 async def create_order_status(order_status: OrderStatus) -> dict:
     """Crear un nuevo order status"""
@@ -74,49 +79,38 @@ async def get_order_status_by_id(order_status_id: str) -> dict:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching order status: {str(e)}")
 
-async def update_order_status(order_status_id: str, order_status: OrderStatus) -> dict:
-    """Actualizar un order status"""
-    try:
-        # Validar ObjectId
-        if not ObjectId.is_valid(order_status_id):
-            raise HTTPException(status_code=400, detail="Invalid order status ID")
+async def update_order_status_and_manage_inventory(order_id: str, new_status: str, requesting_user_id: str = None, is_admin: bool = False) -> dict:
+    # Validar ObjectId
+    if not ObjectId.is_valid(order_id):
+        raise HTTPException(400, "ID de orden inválido")
+    
+    # Obtener la orden
+    order = orders_collection.find_one({"_id": ObjectId(order_id)})
+    if not order:
+        raise HTTPException(404, "Orden no encontrada")
 
-        # Verificar que el order status existe
-        existing = coll.find_one({"_id": ObjectId(order_status_id)})
+    # Validar permisos
+    if not is_admin and requesting_user_id:
+        if order.get("id_user") != requesting_user_id:
+            raise HTTPException(403, "No tienes permiso para modificar esta orden")
+    
+    # Actualizar el estado
+    update_result = orders_collection.update_one(
+        {"_id": ObjectId(order_id)},
+        {"$set": {"status": new_status.lower(), "date_updated": datetime.utcnow()}}
+    )
+    if update_result.matched_count == 0:
+        raise HTTPException(404, "Orden no encontrada o no pudo actualizarse")
 
-        if not existing:
-            raise HTTPException(status_code=404, detail="Order status not found")
+    # Si el estado es "paid" o similar, descontar inventario
+    if new_status.lower() in ["paid", "ordered", "confirmed"]:
+        # Obtener detalles activos de la orden
+        details = list(order_details_collection.find({"id_order": order_id, "active": True}))
+        for detail in details:
+            # descontar_inventario(product_id, cantidad)
+            await descontar_inventario(detail["id_producto"], detail["quantity"])
 
-        # Normalizar descripción
-        order_status.description = order_status.description.strip().lower()
-
-        # Verificar si ya existe otro order status con la misma descripción
-        duplicate = coll.find_one({
-            "description": order_status.description,
-            "_id": {"$ne": ObjectId(order_status_id)}
-        })
-
-        if duplicate:
-            raise HTTPException(status_code=400, detail="Order status with this description already exists")
-
-        # Actualizar el order status
-        order_status_dict = order_status.model_dump(exclude={"id"})
-        result = coll.update_one(
-            {"_id": ObjectId(order_status_id)},
-            {"$set": order_status_dict}
-        )
-
-        if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Order status not found")
-
-        # Retornar el order status actualizado
-        order_status_dict["id"] = order_status_id
-        return order_status_dict
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating order status: {str(e)}")
+    return {"success": True, "message": f"Estado de la orden actualizado a '{new_status}' exitosamente"}
 
 async def delete_order_status(order_status_id: str) -> dict:
     """Eliminar un order status"""

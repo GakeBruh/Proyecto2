@@ -13,5 +13,5 @@ class OrderStatus(BaseModel):
         min_length=2,
         max_length=50,
         pattern=r"^[a-zA-Z0-9\s\-_]+$",  # Solo letras, números, espacios, guiones y guiones bajos
-        examples=["pending", "processing", "shipped", "delivered", "cancelled"]
+        examples=["Pagado", "Procesado", "Enviado", "Entregado", "Cancelado"]
     )
