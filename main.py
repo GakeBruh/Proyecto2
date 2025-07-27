@@ -15,16 +15,17 @@ from routes.box_details import router as box_details_router
 from routes.order_statuses import router as order_statuses_router
 from routes.orders import router as orders_router
 from routes.order_details import router as order_details_router
+from routes.inventory import router as inventory_router
 
 app = FastAPI()
 
-# Incluir routers
 app.include_router(catalogtypes_router)
 app.include_router(catalogs_router)
 app.include_router(box_details_router)
 app.include_router(order_statuses_router)
 app.include_router(orders_router)
 app.include_router(order_details_router)
+app.include_router(inventory_router)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

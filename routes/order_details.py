@@ -11,7 +11,7 @@ from utils.security import validateuser
 router = APIRouter(prefix="/orders")
 
 
-@router.post("/{order_id}/detail", tags=["� Order Details"])
+@router.post("/{order_id}/detail", tags=["Order Details"])
 @validateuser
 async def add_product_to_order(
     request: Request,
@@ -37,7 +37,7 @@ async def add_product_to_order(
     return result
 
 
-@router.get("/{order_id}/details", tags=["� Order Details"])
+@router.get("/{order_id}/details", tags=["Order Details"])
 @validateuser
 async def get_order_products(
     request: Request,
@@ -60,7 +60,7 @@ async def get_order_products(
     return result
 
 
-@router.put("/{order_id}/detail/{detail_id}", tags=["🛒 Order Details"])
+@router.put("/{order_id}/detail/{detail_id}", tags=["Order Details"])
 @validateuser
 async def update_product_quantity(
     request: Request,
@@ -85,7 +85,7 @@ async def update_product_quantity(
     return result
 
 
-@router.delete("/{order_id}/details/{detail_id}", tags=["� Order Details"])
+@router.delete("/{order_id}/details/{detail_id}", tags=["Order Details"])
 @validateuser
 async def remove_product_from_order(
     request: Request,

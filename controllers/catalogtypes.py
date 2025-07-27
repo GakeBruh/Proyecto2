@@ -70,13 +70,29 @@ async def update_catalog_type(catalog_type_id: str, catalog_type: CatalogType) -
 
 async def deactivate_catalog_type(catalog_type_id: str) -> CatalogType:
     try:
+        # Verificar si hay catálogos activos asociados a este tipo
+        catalogs_coll = get_collection("catalogs")
+        has_associated_catalogs = catalogs_coll.find_one({
+            "id_catalog_type": catalog_type_id,
+            "active": True
+        })
+
+        if has_associated_catalogs:
+            raise HTTPException(
+                status_code=400,
+                detail="No se puede desactivar el tipo porque hay catálogos asociados activos."
+            )
+
+        # Hacer soft delete: active → False
         result = coll.update_one(
             {"_id": ObjectId(catalog_type_id)},
             {"$set": {"active": False}}
         )
+
         if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Tipo de catalogo no encontrado")
+            raise HTTPException(status_code=404, detail="Tipo de catálogo no encontrado")
 
         return await get_catalog_type_by_id(catalog_type_id)
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al desactivar el tipo de catalogo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al desactivar el tipo de catálogo: {str(e)}")

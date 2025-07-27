@@ -5,8 +5,8 @@ from pymongo.server_api import ServerApi
 
 load_dotenv()
 
-DB = os.getenv("MONGO_DB_NAME")
-URI = os.getenv("URI")
+DB = os.getenv("DATABASE_NAME")
+URI = os.getenv("MONGODB_URI")
 
 def get_collection( col ):
     client = MongoClient(  

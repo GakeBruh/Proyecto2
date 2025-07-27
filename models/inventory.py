@@ -27,7 +27,7 @@ class Inventory(BaseModel):
         examples=["Lote Julio 2025", "Figuras MGR"]
     )
 
-    date: date = Field(
+    entry_date: date = Field(
         description="Fecha de ingreso al inventario",
         examples=["2025-07-15"]
     )

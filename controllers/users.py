@@ -14,7 +14,7 @@ from utils.mongodb import get_collection
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-cred = credentials.Certificate("secrets/dulceria-secret.json")
+cred = credentials.Certificate("secrets/kakarikostore-secret.json")
 firebase_admin.initialize_app(cred)
 
 async def create_user( user: User ) -> User:
