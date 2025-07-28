@@ -92,9 +92,10 @@ def get_product_validation_pipeline(product_id: str) -> list:
             "as": "catalog_type"
         }},
         {"$match": {
-            "catalog_type.description": {"$regex": "^products$", "$options": "i"}
+            "catalog_type.description": {"$regex": "^products?$", "$options": "i"}
         }}
     ]
+
 
 def get_box_detail_with_product_pipeline(box_id: str, box_detail_id: str) -> list:
     """

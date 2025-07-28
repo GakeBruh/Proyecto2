@@ -8,6 +8,9 @@ orders_collection = get_collection("orders")
 order_details_collection = get_collection("order_details")
 inventories_collection = get_collection("inventories")
 catalogs_collection = get_collection("catalogs")
+catalog_types_coll = get_collection("catalogtypes")
+box_details_coll = get_collection("box_details")
+from pipelines.box_pipelines import get_box_products_pipeline
 from controllers.inventory import descontar_inventario
 coll = get_collection("order_statuses")
 
@@ -81,6 +84,7 @@ async def get_order_status_by_id(order_status_id: str) -> dict:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching order status: {str(e)}")
 
+
 async def update_order_status_and_manage_inventory(order_id: str, new_status: str, requesting_user_id: str = None, is_admin: bool = False) -> dict:
     if not ObjectId.is_valid(order_id):
         raise HTTPException(400, "ID de orden inválido")
@@ -100,26 +104,59 @@ async def update_order_status_and_manage_inventory(order_id: str, new_status: st
     if update_result.matched_count == 0:
         raise HTTPException(404, "Orden no encontrada o no pudo actualizarse")
 
-    if new_status.lower() in ["paid", "ordered", "confirmed"]:
+    if new_status.lower() in ["paid", "ordered", "confirmed", "delivered"]:
         details = list(order_details_collection.find({"id_order": order_id, "active": True}))
         for detail in details:
             catalog_id = detail["id_producto"]
-            cantidad = detail["quantity"]
-            await descontar_inventario(catalog_id, cantidad)
+            cantidad_ordenada = detail["quantity"]
 
-            inventarios_actualizados = list(inventories_collection.find({"catalog_id": catalog_id}))
-            total_restante = sum(i["quantity"] for i in inventarios_actualizados)
+            # Consultar si el producto es una box
+            catalog = catalogs_collection.find_one({"_id": ObjectId(catalog_id)})
+            if not catalog:
+                continue
 
-            if total_restante == 0:
-                catalogs_collection.update_one(
-                    {"_id": ObjectId(catalog_id)},
-                    {"$set": {"active": False}}
-                )
+            tipo_catalogo = catalog.get("id_catalog_type")
+            catalog_type = catalog_types_coll.find_one({"_id": ObjectId(tipo_catalogo)})
+            if not catalog_type:
+                continue
+
+            if catalog_type.get("description", "").lower() == "box":
+                # Obtener productos dentro de la box
+                box_products_pipeline = get_box_products_pipeline(catalog_id)
+                box_products = list(box_details_coll.aggregate(box_products_pipeline))
+
+                for producto in box_products:
+                    id_producto = producto["id_producto"]
+                    cantidad_en_box = producto["quantity"]
+                    cantidad_total = cantidad_en_box * cantidad_ordenada
+
+                    await descontar_inventario(id_producto, cantidad_total)
+
+                    # Verificar si ese producto debe desactivarse
+                    inventarios_actualizados = list(inventories_collection.find({"catalog_id": id_producto}))
+                    total_restante = sum(i["quantity"] for i in inventarios_actualizados)
+                    if total_restante == 0:
+                        catalogs_collection.update_one(
+                            {"_id": ObjectId(id_producto)},
+                            {"$set": {"active": False}}
+                        )
+            else:
+                # Producto individual
+                await descontar_inventario(catalog_id, cantidad_ordenada)
+
+                inventarios_actualizados = list(inventories_collection.find({"catalog_id": catalog_id}))
+                total_restante = sum(i["quantity"] for i in inventarios_actualizados)
+                if total_restante == 0:
+                    catalogs_collection.update_one(
+                        {"_id": ObjectId(catalog_id)},
+                        {"$set": {"active": False}}
+                    )
 
     return {
         "success": True,
         "message": f"Estado de la orden actualizado a '{new_status}' exitosamente"
     }
+
 
 async def delete_order_status(order_status_id: str) -> dict:
     """Eliminar un order status"""

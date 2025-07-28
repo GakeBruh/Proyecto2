@@ -15,6 +15,8 @@ from pipelines import (
 box_details_coll = get_collection("box_details")
 catalogs_coll = get_collection("catalogs")
 catalog_types_coll = get_collection("catalogtypes")
+inventories_coll = get_collection("inventories")
+
 
 async def get_box_with_products(box_id: str) -> BoxWithProducts:
     """Obtener información completa del box con todos sus productos"""
@@ -55,7 +57,7 @@ async def add_product_to_box(box_id: str, product_data: AddProductToBox) -> dict
     try:
         # Verificar que no se esté agregando el mismo box como producto (evitar recursión)
         if product_data.id_producto == box_id:
-            raise HTTPException(status_code=400, detail="No se puede agregar otra box asi misma")
+            raise HTTPException(status_code=400, detail="No se puede agregar otra box a sí misma")
 
         # Validar box (existe, activo y es de tipo box) en una sola pipeline
         box_pipeline = get_box_validation_pipeline(box_id)
@@ -71,17 +73,33 @@ async def add_product_to_box(box_id: str, product_data: AddProductToBox) -> dict
         product_result = list(catalogs_coll.aggregate(product_pipeline))
 
         if not product_result:
-            raise HTTPException(status_code=404, detail="Producto no encontrado, inactivo o " \
-            "no es de tipo producto")
+            raise HTTPException(status_code=404, detail="Producto no encontrado, inactivo o no es de tipo producto")
 
         product = product_result[0]
+
+        # Obtener inventario disponible para ese producto
+        inventarios = list(inventories_coll.find({"catalog_id": product_data.id_producto}))
+        total_disponible = sum(i["quantity"] for i in inventarios)
 
         # Verificar si el producto ya existe en el box usando pipeline
         existing_pipeline = check_existing_product_in_box_pipeline(box_id, product_data.id_producto)
         existing_result = list(box_details_coll.aggregate(existing_pipeline))
 
+        cantidad_existente_en_box = existing_result[0]["quantity"] if existing_result else 0
+        cantidad_final = cantidad_existente_en_box + product_data.quantity
+
+        # Validar que no se exceda el inventario disponible
+        if cantidad_final > total_disponible:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Stock insuficiente para el producto '{product_data.id_producto}'. "
+                    f"Disponible: {total_disponible}, solicitado en total: {cantidad_final}"
+                )
+            )
+
         if existing_result:
-            # Actualizar cantidad si ya existe
+            # Actualizar cantidad si ya existe en el box
             existing_detail = existing_result[0]
             new_quantity = existing_detail["quantity"] + product_data.quantity
             box_details_coll.update_one(
@@ -97,7 +115,6 @@ async def add_product_to_box(box_id: str, product_data: AddProductToBox) -> dict
                 id_producto=product_data.id_producto,
                 quantity=product_data.quantity
             )
-            
             box_detail_dict = box_detail.model_dump(exclude={"id"})
             inserted = box_details_coll.insert_one(box_detail_dict)
             detail_id = str(inserted.inserted_id)

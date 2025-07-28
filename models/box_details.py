@@ -56,9 +56,3 @@ class AddProductToBox(BaseModel):
         examples=[1, 2, 5]
     )
 
-    @field_validator('quantity')
-    @classmethod
-    def validate_quantity(cls, value: int):
-        if value <= 0:
-            raise ValueError("La cantidad debe ser mayor a 0")
-        return value
