@@ -6,6 +6,8 @@ from datetime import datetime
 
 orders_collection = get_collection("orders")
 order_details_collection = get_collection("order_details")
+inventories_collection = get_collection("inventories")
+catalogs_collection = get_collection("catalogs")
 from controllers.inventory import descontar_inventario
 coll = get_collection("order_statuses")
 
@@ -80,21 +82,17 @@ async def get_order_status_by_id(order_status_id: str) -> dict:
         raise HTTPException(status_code=500, detail=f"Error fetching order status: {str(e)}")
 
 async def update_order_status_and_manage_inventory(order_id: str, new_status: str, requesting_user_id: str = None, is_admin: bool = False) -> dict:
-    # Validar ObjectId
     if not ObjectId.is_valid(order_id):
         raise HTTPException(400, "ID de orden inválido")
-    
-    # Obtener la orden
+
     order = orders_collection.find_one({"_id": ObjectId(order_id)})
     if not order:
         raise HTTPException(404, "Orden no encontrada")
 
-    # Validar permisos
     if not is_admin and requesting_user_id:
         if order.get("id_user") != requesting_user_id:
             raise HTTPException(403, "No tienes permiso para modificar esta orden")
-    
-    # Actualizar el estado
+
     update_result = orders_collection.update_one(
         {"_id": ObjectId(order_id)},
         {"$set": {"status": new_status.lower(), "date_updated": datetime.utcnow()}}
@@ -102,15 +100,26 @@ async def update_order_status_and_manage_inventory(order_id: str, new_status: st
     if update_result.matched_count == 0:
         raise HTTPException(404, "Orden no encontrada o no pudo actualizarse")
 
-    # Si el estado es "paid" o similar, descontar inventario
     if new_status.lower() in ["paid", "ordered", "confirmed"]:
-        # Obtener detalles activos de la orden
         details = list(order_details_collection.find({"id_order": order_id, "active": True}))
         for detail in details:
-            # descontar_inventario(product_id, cantidad)
-            await descontar_inventario(detail["id_producto"], detail["quantity"])
+            catalog_id = detail["id_producto"]
+            cantidad = detail["quantity"]
+            await descontar_inventario(catalog_id, cantidad)
 
-    return {"success": True, "message": f"Estado de la orden actualizado a '{new_status}' exitosamente"}
+            inventarios_actualizados = list(inventories_collection.find({"catalog_id": catalog_id}))
+            total_restante = sum(i["quantity"] for i in inventarios_actualizados)
+
+            if total_restante == 0:
+                catalogs_collection.update_one(
+                    {"_id": ObjectId(catalog_id)},
+                    {"$set": {"active": False}}
+                )
+
+    return {
+        "success": True,
+        "message": f"Estado de la orden actualizado a '{new_status}' exitosamente"
+    }
 
 async def delete_order_status(order_status_id: str) -> dict:
     """Eliminar un order status"""

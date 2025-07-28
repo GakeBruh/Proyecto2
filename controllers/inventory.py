@@ -2,6 +2,7 @@ from models.inventory import Inventory
 from utils.mongodb import get_collection
 from fastapi import HTTPException
 from bson import ObjectId
+catalogs_coll = get_collection("catalogs")
 from datetime import datetime, date
 from pipelines.inventory_pipelines import (
     get_all_inventory_pipeline,
@@ -51,7 +52,7 @@ async def get_inventories() -> dict:
 async def get_inventory_by_id(inventory_id: str) -> dict:
     try:
         pipeline = get_inventory_by_id_pipeline(inventory_id)
-        results =  coll.aggregate(pipeline).to_list(length=None)
+        results = list(coll.aggregate(pipeline))
 
         if not results:
             raise HTTPException(status_code=404, detail="Inventario no encontrado")
@@ -64,7 +65,7 @@ async def get_inventory_by_id(inventory_id: str) -> dict:
 
 async def update_inventory_quantity(inventory_id: str, quantity: int, batch_name: str) -> Inventory:
     try:
-        result = await coll.update_one(
+        result = coll.update_one(
             {"_id": ObjectId(inventory_id)},
             {"$set": {
                 "quantity": quantity,
@@ -74,17 +75,30 @@ async def update_inventory_quantity(inventory_id: str, quantity: int, batch_name
 
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Inventario no encontrado")
-        
+
         if result.modified_count == 0:
-           raise HTTPException(status_code=400, detail="No hubo cambios en el inventario")
+            raise HTTPException(status_code=400, detail="No hubo cambios en el inventario")
 
         updated_pipeline = get_inventory_by_id_pipeline(inventory_id)
-        updated_list = await coll.aggregate(updated_pipeline).to_list(length=None)
+        updated_list = list(coll.aggregate(updated_pipeline))
 
         if not updated_list:
             raise HTTPException(status_code=404, detail="Inventario no encontrado tras actualizar")
 
         updated = updated_list[0]
+
+        catalog_id = updated["catalog_id"]
+
+        if quantity > 0:
+            catalogs_coll.update_one(
+                {"_id": ObjectId(catalog_id)},
+                {"$set": {"active": True}}
+            )
+        else:  
+            catalogs_coll.update_one(
+                {"_id": ObjectId(catalog_id)},
+                {"$set": {"active": False}}
+            )
 
         return Inventory(**{
             "id": updated.get("id") or str(updated.get("_id")),
@@ -97,6 +111,7 @@ async def update_inventory_quantity(inventory_id: str, quantity: int, batch_name
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al actualizar el inventario: {str(e)}")
+
 
 async def get_total_stock_by_catalog(catalog_id: str) -> dict:
     try:
@@ -114,7 +129,7 @@ async def descontar_inventario(product_id: str, quantity: int):
     if quantity <= 0:
         raise HTTPException(400, "Cantidad a descontar debe ser mayor que cero")
 
-    inventory = await coll.find_one({"catalog_id": product_id})
+    inventory = coll.find_one({"catalog_id": product_id})
     if not inventory:
         raise HTTPException(404, f"Inventario no encontrado para producto {product_id}")
 
@@ -122,6 +137,6 @@ async def descontar_inventario(product_id: str, quantity: int):
     if new_quantity < 0:
         raise HTTPException(400, f"No hay suficiente inventario para el producto {product_id}")
 
-    result = await coll.update_one({"_id": inventory["_id"]}, {"$set": {"quantity": new_quantity}})
+    result = coll.update_one({"_id": inventory["_id"]}, {"$set": {"quantity": new_quantity}})
     if result.modified_count == 0:
         raise HTTPException(500, "Error actualizando el inventario")

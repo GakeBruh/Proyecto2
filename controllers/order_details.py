@@ -3,6 +3,7 @@ from pipelines.order_detail_pipelines import (
     get_order_details_pipeline,
     get_order_detail_by_id_pipeline
 )
+
 from utils.mongodb import get_collection
 from bson import ObjectId
 from datetime import datetime
@@ -11,7 +12,7 @@ from datetime import datetime
 order_details_collection = get_collection("order_details")
 orders_collection = get_collection("orders")
 catalogs_collection = get_collection("catalogs")
-
+inventories_collection = get_collection("inventories")
 
 # ============================================================================
 # ORDER DETAILS - FUNCIONES HELPER
@@ -172,6 +173,25 @@ async def create_order_detail(order_id: str, detail_data: CreateOrderDetail, req
 
         if existing_detail:
             return {"success": False, "message": "Este producto ya está en la orden", "data": None}
+        
+        # Validar stock disponible para la suma de cantidades
+        inventarios = list(inventories_collection.find({"catalog_id": detail_data.id_producto}))
+        total_disponible = sum(i["quantity"] for i in inventarios)
+
+        detalles_orden = list(order_details_collection.find({
+            "id_order": order_id,
+            "id_producto": detail_data.id_producto,
+            "active": True
+        }))
+        total_pedido_actual = sum(d["quantity"] for d in detalles_orden)
+
+        if (total_pedido_actual + detail_data.quantity) > total_disponible:
+            return {
+                "success": False,
+                "message": f"Stock insuficiente para el producto pedido. Disponible: {total_disponible}, solicitado: {total_pedido_actual + detail_data.quantity}",
+                "data": None
+            }
+
 
         # Crear detalle
         detail_dict = detail_data.model_dump()
