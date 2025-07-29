@@ -85,8 +85,19 @@ def get_total_stock_pipeline(catalog_id: str) -> list:
             "_id": "$catalog_id",
             "total_stock": {"$sum": "$quantity"}
         }},
+        {"$addFields": {
+            "catalog_obj_id": {"$toObjectId": "$_id"}
+        }},
+        {"$lookup": {
+            "from": "catalogs",
+            "localField": "catalog_obj_id",
+            "foreignField": "_id",
+            "as": "catalog"
+        }},
+        {"$unwind": "$catalog"},
         {"$project": {
             "catalog_id": "$_id",
+            "catalog_name": "$catalog.name",
             "total_stock": 1,
             "_id": 0
         }}

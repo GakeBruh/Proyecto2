@@ -115,15 +115,29 @@ async def update_inventory_quantity(inventory_id: str, quantity: int, batch_name
 
 async def get_total_stock_by_catalog(catalog_id: str) -> dict:
     try:
+        if not ObjectId.is_valid(catalog_id):
+            raise HTTPException(status_code=400, detail="ID de catálogo inválido")
+
+        catalog = catalogs_coll.find_one({"_id": ObjectId(catalog_id)})
+        if not catalog:
+            raise HTTPException(status_code=404, detail="Catálogo no encontrado")
+
         pipeline = get_total_stock_pipeline(catalog_id)
         stock_result = list(coll.aggregate(pipeline))
 
         if not stock_result:
-            return {"catalog_id": catalog_id, "total_stock": 0}
+            return {
+                "catalog_id": catalog_id,
+                "catalog_name": catalog.get("name", "Desconocido"),
+                "total_stock": 0
+            }
 
         return stock_result[0]
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error calculating total stock: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al calcular stock: {str(e)}")
+
 
 async def descontar_inventario(product_id: str, quantity: int):
     if quantity <= 0:

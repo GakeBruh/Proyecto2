@@ -5,7 +5,7 @@ import re
 class Catalog(BaseModel):
     id: Optional[str] = Field(
         default=None,
-        description="MongoDB ID - Se genera automáticamente desde el _id de MongoDB, no es necesario enviarlo en POST"
+        description="MongoDB ID"
     )
 
     id_catalog_type: str = Field(
