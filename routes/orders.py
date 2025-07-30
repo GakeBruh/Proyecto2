@@ -17,12 +17,6 @@ async def create_new_order(
     order_data: CreateOrder,
     user_data: dict = Depends(validate_token)
 ):
-    """
-    Crea una nueva orden asociada al usuario autenticado.
-    
-    - **order_data**: Objeto con la información de la orden.
-    - **user_data**: Diccionario con información del usuario autenticado.
-    """
     result = await create_order(order_data, user_data["id"])
     
     if not result["success"]:
@@ -37,13 +31,6 @@ async def get_all_orders(
     limit: int = Query(default=50, ge=1, le=100, description="Número de registros a obtener"),
     user_data: dict = Depends(validate_token)
 ):
-    """
-    Devuelve todas las órdenes del usuario o todas si es administrador.
-    
-    - **skip**: Cantidad de resultados a omitir.
-    - **limit**: Cantidad máxima de resultados.
-    - **user_data**: Diccionario con datos del usuario (admin o no).
-    """
     is_admin = user_data.get("role") == "admin"
     user_id = None if is_admin else user_data["id"]
 
@@ -60,12 +47,7 @@ async def get_order_details(
     order_id: str,
     user_data: dict = Depends(validate_token)
 ):
-    """
-    Obtiene los detalles de una orden específica.
-    
-    - **order_id**: ID de la orden a consultar.
-    - **user_data**: Información del usuario autenticado.
-    """
+
     is_admin = user_data.get("role") == "admin"
     user_id = None if is_admin else user_data["id"]
 
@@ -87,15 +69,8 @@ async def finalize_order(
     order_id: str,
     user_data: dict = Depends(validate_token)
 ):
-    """
-    Cambia el estado de una orden a 'Ordered'.
-    
-    - **order_id**: ID de la orden a modificar.
-    - **user_data**: Información del usuario autenticado.
-    """
     result = await update_order_status(
         order_id,
-        None,  # Determinar estado automáticamente
         requesting_user_id=user_data["id"],
         is_admin=False
     )
@@ -117,12 +92,6 @@ async def change_order_status_admin(
     status_data: ChangeOrderStatus,
     _: dict = Depends(validate_admin)
 ):
-    """
-    Permite a un administrador cambiar el estado de una orden.
-
-    - **order_id**: ID de la orden a modificar.
-    - **status_data**: Objeto con el nuevo estado `id_status`.
-    """
     result = await update_order_status(
         order_id,
         status_data.id_status,

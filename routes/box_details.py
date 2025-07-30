@@ -5,7 +5,7 @@ from controllers.box_details import (
     add_product_to_box,
     remove_product_from_box
 )
-from utils.security import validate_admin, validate_token  # ← Este es el nuevo validador con Depends
+from utils.security import validate_admin, validate_token 
 
 router = APIRouter()
 

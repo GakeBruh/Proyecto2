@@ -52,7 +52,6 @@ class OrderDetail(BaseModel):
 
 
 class CreateOrderDetail(BaseModel):
-    """Modelo para crear un detalle de orden"""
     id_producto: str = Field(
         description="ID del producto",
         examples=["507f1f77bcf86cd799439012"]
@@ -66,7 +65,6 @@ class CreateOrderDetail(BaseModel):
 
 
 class UpdateOrderDetail(BaseModel):
-    """Modelo para actualizar cantidad de un detalle"""
     quantity: int = Field(
         description="Nueva cantidad del producto",
         gt=0,
