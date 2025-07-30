@@ -1,12 +1,6 @@
-"""
-Pipelines de MongoDB para operaciones con boxes
-"""
 from bson import ObjectId
 
 def get_box_validation_pipeline(box_id: str) -> list:
-    """
-    Pipeline para validar que un box existe, está activo y es de tipo 'box'
-    """
     return [
         {"$match": {"_id": ObjectId(box_id)}},
         {"$addFields": {
@@ -25,10 +19,6 @@ def get_box_validation_pipeline(box_id: str) -> list:
     ]
 
 def get_box_with_catalog_type_pipeline(box_id: str) -> list:
-    """
-    Pipeline para obtener un box con información del catalog type
-    (sin filtro de activo para casos de solo lectura)
-    """
     return [
         {"$match": {"_id": ObjectId(box_id)}},
         {"$addFields": {
@@ -46,9 +36,6 @@ def get_box_with_catalog_type_pipeline(box_id: str) -> list:
     ]
 
 def get_box_products_pipeline(box_id: str) -> list:
-    """
-    Pipeline para obtener todos los productos de un box con información completa
-    """
     return [
         {"$match": {"id_box": box_id}},
         {"$addFields": {
@@ -74,9 +61,6 @@ def get_box_products_pipeline(box_id: str) -> list:
     ]
 
 def get_product_validation_pipeline(product_id: str) -> list:
-    """
-    Pipeline para validar que un producto existe y está activo
-    """
     return [
         {"$match": {
             "_id": ObjectId(product_id),
@@ -98,9 +82,6 @@ def get_product_validation_pipeline(product_id: str) -> list:
 
 
 def get_box_detail_with_product_pipeline(box_id: str, box_detail_id: str) -> list:
-    """
-    Pipeline para obtener un box detail específico con información del producto
-    """
     return [
         {"$match": {
             "_id": ObjectId(box_detail_id),
@@ -127,9 +108,6 @@ def get_box_detail_with_product_pipeline(box_id: str, box_detail_id: str) -> lis
     ]
 
 def check_existing_product_in_box_pipeline(box_id: str, product_id: str) -> list:
-    """
-    Pipeline para verificar si un producto ya existe en un box
-    """
     return [
         {"$match": {
             "id_box": box_id,

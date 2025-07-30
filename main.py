@@ -1,13 +1,13 @@
 import uvicorn
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Depends
 
 from controllers.users import create_user, login
 from models.users import User
 from models.login import Login
 
-from utils.security import validateuser, validateadmin
+from utils.security import validate_token, validate_admin
 
 from routes.catalogtypes import router as catalogtypes_router
 from routes.catalogs import router as catalogs_router
@@ -44,19 +44,17 @@ async def login_access(l: Login) -> dict:
 
 
 @app.get("/exampleadmin")
-@validateadmin
-async def example_admin(request: Request):
+async def example_admin(admin_data: dict = Depends(validate_admin)):
     return {
-        "message": "This is an example admin endpoint."
-        , "admin": request.state.admin
+        "message": "This is an example admin endpoint.",
+        "admin": admin_data.get("role")
     }
 
 @app.get("/exampleuser")
-@validateuser
-async def example_user(request: Request):
+async def example_user(user_data: dict = Depends(validate_token)):
     return {
-        "message": "This is an example user endpoint."
-        ,"email": request.state.email
+        "message": "This is an example user endpoint.",
+        "email": user_data.get("email")
     }
 
 if __name__ == "__main__":

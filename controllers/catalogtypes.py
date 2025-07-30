@@ -25,7 +25,6 @@ async def get_catalog_types() -> list[CatalogType]:
     try:
         catalog_types = []
         for doc in coll.find():
-            # Mapear _id a id para el modelo Pydantic
             doc['id'] = str(doc['_id'])
             del doc['_id']
             catalog_type = CatalogType(**doc)
@@ -40,7 +39,6 @@ async def get_catalog_type_by_id(catalog_type_id: str) -> CatalogType:
         if not doc:
             raise HTTPException(status_code=404, detail="Tipo de catalogo no encontrado")
 
-        # Mapear _id a id para el modelo Pydantic
         doc['id'] = str(doc['_id'])
         del doc['_id']
         return CatalogType(**doc)
@@ -70,7 +68,6 @@ async def update_catalog_type(catalog_type_id: str, catalog_type: CatalogType) -
 
 async def deactivate_catalog_type(catalog_type_id: str) -> CatalogType:
     try:
-        # Verificar si hay catálogos activos asociados a este tipo
         catalogs_coll = get_collection("catalogs")
         has_associated_catalogs = catalogs_coll.find_one({
             "id_catalog_type": catalog_type_id,
@@ -83,7 +80,6 @@ async def deactivate_catalog_type(catalog_type_id: str) -> CatalogType:
                 detail="No se puede desactivar el tipo porque hay catálogos asociados activos."
             )
 
-        # Hacer soft delete: active → False
         result = coll.update_one(
             {"_id": ObjectId(catalog_type_id)},
             {"$set": {"active": False}}

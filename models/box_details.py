@@ -31,7 +31,7 @@ class BoxDetail(BaseModel):
         return value
 
 
-# Modelo para la respuesta del box completo con productos
+
 class BoxWithProducts(BaseModel):
     id: str = Field(description="ID del box")
     id_catalog_type: str = Field(description="ID del tipo de catálogo")
@@ -43,7 +43,7 @@ class BoxWithProducts(BaseModel):
     products: list[dict] = Field(description="Lista de productos en el box")
 
 
-# Modelo para agregar producto al box
+
 class AddProductToBox(BaseModel):
     id_producto: str = Field(
         description="ID del producto a agregar al box",

@@ -1,7 +1,6 @@
 from bson import ObjectId
 
 def get_order_details_pipeline(order_id: str) -> list:
-    """Pipeline para obtener TODOS los detalles de una orden con información del producto"""
     return [
         {"$match": {"id_order": ObjectId(order_id), "active": True}},
         {
@@ -31,7 +30,6 @@ def get_order_details_pipeline(order_id: str) -> list:
 
 
 def validate_order_exists_pipeline(order_id: str) -> list:
-    """Pipeline para validar que una orden existe"""
     return [
         {"$match": {"_id": ObjectId(order_id)}},
         {"$project": {"_id": 1}},
@@ -40,7 +38,6 @@ def validate_order_exists_pipeline(order_id: str) -> list:
 
 
 def validate_product_exists_pipeline(product_id: str) -> list:
-    """Pipeline para validar que un producto existe"""
     return [
         {"$match": {"_id": ObjectId(product_id)}},
         {"$project": {"_id": 1}},
@@ -49,7 +46,6 @@ def validate_product_exists_pipeline(product_id: str) -> list:
 
 
 def check_order_detail_exists_pipeline(order_id: str, product_id: str) -> list:
-    """Pipeline para verificar si ya existe un detalle de orden para un producto específico"""
     return [
         {
             "$match": {
@@ -64,7 +60,6 @@ def check_order_detail_exists_pipeline(order_id: str, product_id: str) -> list:
 
 
 def get_order_detail_by_id_pipeline(detail_id: str) -> list:
-    """Pipeline para obtener un detalle específico de orden"""
     return [
         {"$match": {"_id": ObjectId(detail_id)}},
         {
@@ -101,7 +96,6 @@ def get_order_detail_by_id_pipeline(detail_id: str) -> list:
 
 
 def get_order_details_owner_pipeline(detail_id: str) -> list:
-    """Pipeline para obtener el propietario de un detalle de orden"""
     return [
         {"$match": {"_id": ObjectId(detail_id)}},
         {

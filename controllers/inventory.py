@@ -24,7 +24,6 @@ async def create_inventory(inventory: Inventory) -> Inventory:
 
         inventory_dict = inventory.model_dump(exclude={"id"})
 
-        # Convierte date a string para MongoDB
         if isinstance(inventory_dict.get("entry_date"), date):
             inventory_dict["entry_date"] = inventory_dict["entry_date"].isoformat()
 

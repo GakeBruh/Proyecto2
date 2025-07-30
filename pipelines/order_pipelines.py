@@ -1,7 +1,6 @@
 from bson import ObjectId
 
 def get_all_orders_pipeline(skip: int = 0, limit: int = 50) -> list:
-    """Pipeline para obtener todas las órdenes con información del usuario"""
     return [
         {
             "$lookup": {
@@ -33,7 +32,6 @@ def get_all_orders_pipeline(skip: int = 0, limit: int = 50) -> list:
 
 
 def get_orders_by_user_pipeline(user_id: str, skip: int = 0, limit: int = 50) -> list:
-    """Pipeline para obtener órdenes de un usuario específico"""
     return [
         {"$match": {"id_user": user_id}},  # Ahora id_user es string
         {
@@ -66,7 +64,6 @@ def get_orders_by_user_pipeline(user_id: str, skip: int = 0, limit: int = 50) ->
 
 
 def get_order_by_id_pipeline(order_id: str) -> list:
-    """Pipeline para obtener una orden específica con detalles completos"""
     return [
         {"$match": {"_id": ObjectId(order_id)}},
         {
@@ -141,7 +138,6 @@ def get_order_by_id_pipeline(order_id: str) -> list:
 
 
 def validate_user_exists_pipeline(user_id: str) -> list:
-    """Pipeline para validar que un usuario existe"""
     return [
         {"$match": {"_id": ObjectId(user_id)}},
         {"$project": {"_id": 1}},
@@ -150,7 +146,6 @@ def validate_user_exists_pipeline(user_id: str) -> list:
 
 
 def get_order_owner_pipeline(order_id: str):
-    """Pipeline para obtener el propietario de una orden"""
     return [
         {"$match": {"_id": ObjectId(order_id)}},
         {"$project": {"id_user": "$id_user"}},  # Ya es string, no necesita conversión
@@ -159,13 +154,9 @@ def get_order_owner_pipeline(order_id: str):
 
 
 def get_existing_inprogress_order_pipeline(user_id: str):
-    """Pipeline para buscar una orden existente en estado 'inprogress' del usuario"""
     return [
-        # Buscar órdenes del usuario (ahora id_user es string)
         {"$match": {"id_user": user_id}},
 
-        # Lookup con order_status_record para obtener el estado más reciente
-        # Convertimos _id a string para hacer match con id_order (que ahora es string)
         {"$lookup": {
             "from": "order_status_record",
             "let": {"order_id": {"$toString": "$_id"}},
@@ -177,16 +168,12 @@ def get_existing_inprogress_order_pipeline(user_id: str):
             "as": "latest_status_array"
         }},
 
-        # Extraer el estado más reciente
         {"$addFields": {
             "latest_status": {"$arrayElemAt": ["$latest_status_array", 0]}
         }},
 
-        # Solo procesar órdenes que tienen estado
         {"$match": {"latest_status": {"$exists": True}}},
 
-        # Lookup con order_statuses para obtener la descripción del estado
-        # Convertimos id_status (string) a ObjectId para hacer match con _id
         {"$lookup": {
             "from": "order_statuses",
             "let": {"status_id": {"$toObjectId": "$latest_status.id_status"}},
@@ -196,10 +183,8 @@ def get_existing_inprogress_order_pipeline(user_id: str):
             "as": "status_info"
         }},
 
-        # Filtrar solo órdenes en "inprogress"
         {"$match": {"status_info.description": "inprogress"}},
 
-        # Proyectar solo los campos necesarios
         {"$project": {
             "_id": {"$toString": "$_id"},
             "id_user": "$id_user",  # Ya es string

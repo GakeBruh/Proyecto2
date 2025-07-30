@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, HTTPException, Request
+from fastapi import APIRouter, Query, HTTPException, Depends
 from models.orders import CreateOrder
 from models.change_order_status import ChangeOrderStatus
 from controllers.orders import (
@@ -7,20 +7,23 @@ from controllers.orders import (
     get_order_by_id,
     update_order_status
 )
-from utils.security import validateuser, validateadmin
+from utils.security import validate_token, validate_admin
 
-router = APIRouter(prefix="/orders")
+router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
-@router.post("/", tags=["Orders"])
-@validateuser
+@router.post("/", summary="Crear una nueva orden")
 async def create_new_order(
-    request: Request,
-    order_data: CreateOrder
+    order_data: CreateOrder,
+    user_data: dict = Depends(validate_token)
 ):
-
-    # El user_id se toma automáticamente del request.state.id (inyectado por @validateuser)
-    result = await create_order(order_data, request.state.id)
+    """
+    Crea una nueva orden asociada al usuario autenticado.
+    
+    - **order_data**: Objeto con la información de la orden.
+    - **user_data**: Diccionario con información del usuario autenticado.
+    """
+    result = await create_order(order_data, user_data["id"])
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])
@@ -28,46 +31,46 @@ async def create_new_order(
     return result
 
 
-@router.get("/", tags=["Orders"])
-@validateuser
+@router.get("/", summary="Obtener todas las órdenes")
 async def get_all_orders(
-    request: Request,
     skip: int = Query(default=0, ge=0, description="Número de registros a omitir"),
-    limit: int = Query(default=50, ge=1, le=100, description="Número de registros a obtener")
+    limit: int = Query(default=50, ge=1, le=100, description="Número de registros a obtener"),
+    user_data: dict = Depends(validate_token)
 ):
     """
-    Obtener órdenes:
-    - Admin: todas las órdenes del sistema
-    - Usuario: solo sus propias órdenes
+    Devuelve todas las órdenes del usuario o todas si es administrador.
+    
+    - **skip**: Cantidad de resultados a omitir.
+    - **limit**: Cantidad máxima de resultados.
+    - **user_data**: Diccionario con datos del usuario (admin o no).
     """
-    # Verificar si es admin desde request.state
-    is_admin = getattr(request.state, 'admin', False)
-    user_id = None if is_admin else request.state.id
-    
+    is_admin = user_data.get("role") == "admin"
+    user_id = None if is_admin else user_data["id"]
+
     result = await get_orders(skip=skip, limit=limit, user_id=user_id)
-    
+
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])
-    
+
     return result
 
 
-@router.get("/{order_id}", tags=["Orders"])
-@validateuser
+@router.get("/{order_id}", summary="Obtener detalles de una orden")
 async def get_order_details(
-    request: Request,
-    order_id: str
+    order_id: str,
+    user_data: dict = Depends(validate_token)
 ):
     """
-    Obtener orden específica:
-    - Admin: cualquier orden
-    - Usuario: solo si la orden le pertenece
+    Obtiene los detalles de una orden específica.
+    
+    - **order_id**: ID de la orden a consultar.
+    - **user_data**: Información del usuario autenticado.
     """
-    is_admin = getattr(request.state, 'admin', False)
-    requesting_user_id = request.state.id if not is_admin else None
-    
-    result = await get_order_by_id(order_id, requesting_user_id, is_admin)
-    
+    is_admin = user_data.get("role") == "admin"
+    user_id = None if is_admin else user_data["id"]
+
+    result = await get_order_by_id(order_id, user_id, is_admin)
+
     if not result["success"]:
         if result["message"] == "Orden no encontrada":
             raise HTTPException(status_code=404, detail=result["message"])
@@ -75,29 +78,28 @@ async def get_order_details(
             raise HTTPException(status_code=403, detail=result["message"])
         else:
             raise HTTPException(status_code=400, detail=result["message"])
-    
+
     return result
 
 
-@router.put("/{order_id}/status", summary="Finalizar orden (cambiar a Ordered)", tags=["Orders"])
-@validateuser
+@router.put("/{order_id}/status", summary="Finalizar orden (cambiar a Ordered)")
 async def finalize_order(
-    request: Request,
-    order_id: str
+    order_id: str,
+    user_data: dict = Depends(validate_token)
 ):
     """
-    Finalizar orden (usuarios):
-    - Automáticamente cambia de InProgress a Ordered
-    - Solo sus propias órdenes
-    - No requiere payload
+    Cambia el estado de una orden a 'Ordered'.
+    
+    - **order_id**: ID de la orden a modificar.
+    - **user_data**: Información del usuario autenticado.
     """
     result = await update_order_status(
-        order_id, 
-        None,  # No enviamos id_status, se determina automáticamente
-        requesting_user_id=request.state.id,
+        order_id,
+        None,  # Determinar estado automáticamente
+        requesting_user_id=user_data["id"],
         is_admin=False
     )
-    
+
     if not result["success"]:
         if result["message"] == "Orden no encontrada":
             raise HTTPException(status_code=404, detail=result["message"])
@@ -105,32 +107,32 @@ async def finalize_order(
             raise HTTPException(status_code=403, detail=result["message"])
         else:
             raise HTTPException(status_code=400, detail=result["message"])
-    
+
     return result
 
 
-@router.post("/{order_id}/status", tags=["Orders"])
-@validateadmin
+@router.post("/{order_id}/status", summary="Cambiar estado de orden como administrador")
 async def change_order_status_admin(
-    request: Request,
     order_id: str,
-    status_data: ChangeOrderStatus
+    status_data: ChangeOrderStatus,
+    _: dict = Depends(validate_admin)
 ):
     """
-    Cambiar estado de orden (admin):
-    - Pueden cambiar cualquier orden a cualquier estado
-    - Solo requiere id_status en el payload
+    Permite a un administrador cambiar el estado de una orden.
+
+    - **order_id**: ID de la orden a modificar.
+    - **status_data**: Objeto con el nuevo estado `id_status`.
     """
     result = await update_order_status(
-        order_id, 
-        status_data.id_status,  # Solo el id_status, no el id_order
+        order_id,
+        status_data.id_status,
         is_admin=True
     )
-    
+
     if not result["success"]:
         if result["message"] == "Orden no encontrada":
             raise HTTPException(status_code=404, detail=result["message"])
         else:
             raise HTTPException(status_code=400, detail=result["message"])
-    
+
     return result

@@ -16,7 +16,6 @@ catalog_types_coll = get_collection("catalogtypes")
 async def create_catalog(catalog: Catalog) -> Catalog:
     try:
 
-        # Validar que el catalog_type existe y está activo usando pipeline
         catalog_type_pipeline = validate_catalog_type_pipeline(catalog.id_catalog_type)
         catalog_type_result = list(catalog_types_coll.aggregate(catalog_type_pipeline))
 
@@ -26,7 +25,6 @@ async def create_catalog(catalog: Catalog) -> Catalog:
         catalog.name = catalog.name.strip()
         catalog.description = catalog.description.strip()
 
-        # Verificar si ya existe un catálogo con el mismo nombre
         existing_catalog = coll.find_one({"name": {"$regex": f"^{catalog.name}$", "$options": "i"}})
         if existing_catalog:
             raise HTTPException(status_code=400, detail="Ya existe un catalogo con este nombre")
@@ -42,11 +40,9 @@ async def create_catalog(catalog: Catalog) -> Catalog:
 
 async def get_catalogs(skip: int = 0, limit: int = 10) -> dict:
     try:
-        # Usar pipeline optimizada para obtener catálogos con información del tipo
         pipeline = get_all_catalogs_with_types_pipeline(skip, limit)
         catalogs = list(coll.aggregate(pipeline))
 
-        # Contar total de documentos para paginación
         total_count = coll.count_documents({"active": True})
 
         return {
@@ -60,7 +56,6 @@ async def get_catalogs(skip: int = 0, limit: int = 10) -> dict:
 
 async def get_catalog_by_id(catalog_id: str) -> dict:
     try:
-        # Usar pipeline para obtener catálogo con información del tipo
         pipeline = get_catalog_with_type_pipeline(catalog_id)
         catalog_result = list(coll.aggregate(pipeline))
         
@@ -75,11 +70,9 @@ async def get_catalog_by_id(catalog_id: str) -> dict:
 
 async def get_catalogs_by_type(catalog_type_description: str, skip: int = 0, limit: int = 10) -> dict:
     try:
-        # Usar pipeline optimizada para obtener catálogos por tipo
         pipeline = get_catalogs_by_type_pipeline(catalog_type_description, skip, limit)
         catalogs = list(coll.aggregate(pipeline))
         
-        # Contar total para paginación
         count_pipeline = [
             {"$addFields": {"id_catalog_type_obj": {"$toObjectId": "$id_catalog_type"}}},
             {"$lookup": {
@@ -111,7 +104,6 @@ async def get_catalogs_by_type(catalog_type_description: str, skip: int = 0, lim
 
 async def update_catalog(catalog_id: str, catalog: Catalog) -> Catalog:
     try:
-        # Validar que el catalog_type existe
         catalog_type = catalog_types_coll.find_one({"_id": ObjectId(catalog.id_catalog_type)})
         if not catalog_type:
             raise HTTPException(status_code=400, detail="Tipo de Catalogo no encontrado")
@@ -119,7 +111,7 @@ async def update_catalog(catalog_id: str, catalog: Catalog) -> Catalog:
         catalog.name = catalog.name.strip()
         catalog.description = catalog.description.strip()
 
-        # Verificar si ya existe otro catálogo con el mismo nombre
+
         existing_catalog = coll.find_one({
             "name": {"$regex": f"^{catalog.name}$", "$options": "i"},
             "_id": {"$ne": ObjectId(catalog_id)}

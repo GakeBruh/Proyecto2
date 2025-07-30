@@ -55,7 +55,6 @@ class Order(BaseModel):
 
 
 class CreateOrder(BaseModel):
-    """Modelo para crear una orden """
     pass  # No necesita campos, todo se calcula automáticamente
 
     class Config:

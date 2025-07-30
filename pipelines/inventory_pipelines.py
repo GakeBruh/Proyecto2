@@ -1,11 +1,6 @@
 from bson import ObjectId
 
-from bson import ObjectId
-
 def get_inventory_by_id_pipeline(inventory_id: str) -> list:
-    """
-    Pipeline para obtener un inventario por su ID con detalles del catálogo
-    """
     return [
         {"$match": {"_id": ObjectId(inventory_id)}},
         {"$addFields": {

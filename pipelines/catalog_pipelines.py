@@ -1,12 +1,6 @@
-"""
-Pipelines de MongoDB para operaciones con catálogos
-"""
 from bson import ObjectId
 
 def get_catalog_with_type_pipeline(catalog_id: str) -> list:
-    """
-    Pipeline para obtener un catálogo con información del tipo
-    """
     return [
         {"$match": {"_id": ObjectId(catalog_id)}},
         {"$addFields": {
@@ -32,9 +26,6 @@ def get_catalog_with_type_pipeline(catalog_id: str) -> list:
     ]
 
 def get_catalogs_by_type_pipeline(catalog_type_description: str, skip: int = 0, limit: int = 10) -> list:
-    """
-    Pipeline para obtener catálogos filtrados por tipo con paginación
-    """
     return [
         {"$addFields": {
             "id_catalog_type_obj": {"$toObjectId": "$id_catalog_type"}
@@ -64,9 +55,6 @@ def get_catalogs_by_type_pipeline(catalog_type_description: str, skip: int = 0, 
     ]
 
 def get_all_catalogs_with_types_pipeline(skip: int = 0, limit: int = 10) -> list:
-    """
-    Pipeline para obtener todos los catálogos con información del tipo
-    """
     return [
         {"$addFields": {
             "id_catalog_type_obj": {"$toObjectId": "$id_catalog_type"}
@@ -97,9 +85,6 @@ def get_all_catalogs_with_types_pipeline(skip: int = 0, limit: int = 10) -> list
     ]
 
 def validate_catalog_type_pipeline(catalog_type_id: str) -> list:
-    """
-    Pipeline para validar que un catalog type existe y está activo
-    """
     return [
         {"$match": {
             "_id": ObjectId(catalog_type_id),
@@ -113,9 +98,6 @@ def validate_catalog_type_pipeline(catalog_type_id: str) -> list:
     ]
 
 def search_catalogs_pipeline(search_term: str, skip: int = 0, limit: int = 10) -> list:
-    """
-    Pipeline para buscar catálogos por nombre o descripción
-    """
     return [
         {"$match": {
             "$or": [

@@ -3,7 +3,6 @@ from typing import Optional
 
 
 class ChangeOrderStatus(BaseModel):
-    """Modelo simplificado para cambiar estado de orden (solo id_status)"""
     id_status: str = Field(
         description="ID del estado a asignar",
         examples=["507f1f77bcf86cd799439012"]

@@ -16,22 +16,19 @@ coll = get_collection("order_statuses")
 
 
 async def create_order_status(order_status: OrderStatus) -> dict:
-    """Crear un nuevo order status"""
     try:
-        # Normalizar descripción
         order_status.description = order_status.description.strip().lower()
 
-        # Verificar si ya existe un order status con la misma descripción
         existing = coll.find_one({"description": order_status.description})
 
         if existing:
             raise HTTPException(status_code=400, detail="Order status with this description already exists")
 
-        # Crear el order status
+
         order_status_dict = order_status.model_dump(exclude={"id"})
         inserted = coll.insert_one(order_status_dict)
 
-        # Retornar el order status creado con su ID
+
         order_status_dict["id"] = str(inserted.inserted_id)
         return order_status_dict
 
@@ -41,9 +38,7 @@ async def create_order_status(order_status: OrderStatus) -> dict:
         raise HTTPException(status_code=500, detail=f"Error creating order status: {str(e)}")
 
 async def get_order_statuses() -> dict:
-    """Obtener todos los order statuses"""
     try:
-        # Obtener todos los order statuses directamente
         order_statuses_cursor = coll.find({})
         order_statuses = []
         
@@ -61,19 +56,15 @@ async def get_order_statuses() -> dict:
         raise HTTPException(status_code=500, detail=f"Error fetching order statuses: {str(e)}")
 
 async def get_order_status_by_id(order_status_id: str) -> dict:
-    """Obtener un order status por ID"""
     try:
-        # Validar ObjectId
         if not ObjectId.is_valid(order_status_id):
             raise HTTPException(status_code=400, detail="Invalid order status ID")
         
-        # Buscar el order status directamente
         order_status = coll.find_one({"_id": ObjectId(order_status_id)})
         
         if not order_status:
             raise HTTPException(status_code=404, detail="Order status not found")
         
-        # Convertir ObjectId a string para la respuesta
         order_status["id"] = str(order_status["_id"])
         del order_status["_id"]
         
@@ -110,7 +101,6 @@ async def update_order_status_and_manage_inventory(order_id: str, new_status: st
             catalog_id = detail["id_producto"]
             cantidad_ordenada = detail["quantity"]
 
-            # Consultar si el producto es una box
             catalog = catalogs_collection.find_one({"_id": ObjectId(catalog_id)})
             if not catalog:
                 continue
@@ -121,7 +111,6 @@ async def update_order_status_and_manage_inventory(order_id: str, new_status: st
                 continue
 
             if catalog_type.get("description", "").lower() == "box":
-                # Obtener productos dentro de la box
                 box_products_pipeline = get_box_products_pipeline(catalog_id)
                 box_products = list(box_details_coll.aggregate(box_products_pipeline))
 
@@ -132,7 +121,6 @@ async def update_order_status_and_manage_inventory(order_id: str, new_status: st
 
                     await descontar_inventario(id_producto, cantidad_total)
 
-                    # Verificar si ese producto debe desactivarse
                     inventarios_actualizados = list(inventories_collection.find({"catalog_id": id_producto}))
                     total_restante = sum(i["quantity"] for i in inventarios_actualizados)
                     if total_restante == 0:
@@ -141,7 +129,6 @@ async def update_order_status_and_manage_inventory(order_id: str, new_status: st
                             {"$set": {"active": False}}
                         )
             else:
-                # Producto individual
                 await descontar_inventario(catalog_id, cantidad_ordenada)
 
                 inventarios_actualizados = list(inventories_collection.find({"catalog_id": catalog_id}))
@@ -159,25 +146,20 @@ async def update_order_status_and_manage_inventory(order_id: str, new_status: st
 
 
 async def delete_order_status(order_status_id: str) -> dict:
-    """Eliminar un order status"""
     try:
-        # Validar ObjectId
         if not ObjectId.is_valid(order_status_id):
             raise HTTPException(status_code=400, detail="Invalid order status ID")
 
-        # Obtener el order status antes de eliminarlo
         order_status = coll.find_one({"_id": ObjectId(order_status_id)})
 
         if not order_status:
             raise HTTPException(status_code=404, detail="Order status not found")
 
-        # Eliminar el order status
         result = coll.delete_one({"_id": ObjectId(order_status_id)})
 
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Order status not found")
 
-        # Convertir ObjectId a string para la respuesta
         order_status["id"] = str(order_status["_id"])
         del order_status["_id"]
 

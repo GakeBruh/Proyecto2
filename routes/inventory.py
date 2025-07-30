@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends
 from models.inventory import Inventory
 from controllers.inventory import (
     create_inventory,
@@ -7,32 +7,41 @@ from controllers.inventory import (
     update_inventory_quantity,
     get_total_stock_by_catalog
 )
-from utils.security import validateadmin
+from utils.security import validate_admin  # ← versión con Depends
 
 router = APIRouter()
 
 @router.post("/inventories", response_model=Inventory, tags=["Inventories"])
-@validateadmin
-async def create_inventory_endpoint(request: Request, inventory: Inventory) -> Inventory:
+async def create_inventory_endpoint(
+    inventory: Inventory,
+    user: dict = Depends(validate_admin)  # ← validación
+) -> Inventory:
     return await create_inventory(inventory)
 
 @router.get("/inventories", response_model=dict, tags=["Inventories"])
-@validateadmin
-async def get_inventories_endpoint(request: Request):
+async def get_inventories_endpoint(
+    user: dict = Depends(validate_admin)
+):
     return await get_inventories()
 
 @router.get("/inventories/{inventory_id}", response_model=dict, tags=["Inventories"])
-@validateadmin
-async def get_inventory_by_id_endpoint(request: Request, inventory_id: str):
+async def get_inventory_by_id_endpoint(
+    inventory_id: str,
+    user: dict = Depends(validate_admin)
+):
     return await get_inventory_by_id(inventory_id)
 
-
 @router.put("/inventories/{inventory_id}", response_model=Inventory, tags=["Inventories"])
-@validateadmin
-async def update_inventory_quantity_endpoint(request: Request, inventory_id: str, inventory: Inventory) -> Inventory:
+async def update_inventory_quantity_endpoint(
+    inventory_id: str,
+    inventory: Inventory,
+    user: dict = Depends(validate_admin)
+) -> Inventory:
     return await update_inventory_quantity(inventory_id, inventory.quantity, inventory.batch_name)
 
 @router.get("/inventories/stock/{catalog_id}", response_model=dict, tags=["Inventories"])
-@validateadmin
-async def get_total_stock_by_catalog_endpoint(request: Request, catalog_id: str) -> dict:
+async def get_total_stock_by_catalog_endpoint(
+    catalog_id: str,
+    user: dict = Depends(validate_admin)
+) -> dict:
     return await get_total_stock_by_catalog(catalog_id)

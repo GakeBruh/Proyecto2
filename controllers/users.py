@@ -35,9 +35,6 @@ async def create_user( user: User ) -> User:
     try:
         coll = get_collection("users")
 
-        # Aunque se manden en el payload igual los excluimos ya que sabes el 
-        # state inicial cuando se crea el usuario.
-
         new_user = User(
             name=user.name
             , lastname=user.lastname

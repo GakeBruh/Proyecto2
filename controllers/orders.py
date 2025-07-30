@@ -170,32 +170,23 @@ async def get_order_by_id(order_id: str, requesting_user_id: str = None, is_admi
         return {"success": False, "message": f"Error: {str(e)}", "data": None}
 
 
-# ============================================================================
-# ORDERS - FUNCIONES DE ACTUALIZACIÓN DE ESTADO
-# ============================================================================
 
 async def update_order_status(order_id: str, order_status_id: str = None, requesting_user_id: str = None, is_admin: bool = False) -> dict:
-    """Actualizar el estado de una orden (solo para users si es su orden, o admins)"""
     try:
-        # Validar ObjectId
         if not ObjectId.is_valid(order_id):
             return {"success": False, "message": "ID de orden inválido", "data": None}
 
-        # Verificar que la orden existe
         order_exists = orders_collection.find_one({"_id": ObjectId(order_id)})
         if not order_exists:
             return {"success": False, "message": "Orden no encontrada", "data": None}
 
-        # Si no es admin, verificar permisos y restricciones
         if not is_admin:
             if not requesting_user_id:
                 return {"success": False, "message": "Usuario no especificado", "data": None}
 
-            # Verificar que la orden pertenece al usuario
             if order_exists["id_user"] != requesting_user_id:
                 return {"success": False, "message": "No tienes permiso para modificar esta orden", "data": None}
 
-            # Verificar que el estado actual es "InProgress"
             current_status = order_status_records_collection.find_one(
                 {"id_order": order_id},  # Buscar por string directamente
                 sort=[("date", -1)]
@@ -206,14 +197,12 @@ async def update_order_status(order_id: str, order_status_id: str = None, reques
                 if current_status_info and current_status_info["description"] != "inprogress":
                     return {"success": False, "message": "Solo puedes finalizar órdenes en progreso", "data": None}
 
-            # Para usuarios, automáticamente buscar el estado "ordered"
             if order_status_id is None:
                 ordered_status = order_statuses_collection.find_one({"description": "ordered"})
                 if not ordered_status:
                     return {"success": False, "message": "Estado 'ordered' no encontrado en el sistema", "data": None}
                 order_status_id = str(ordered_status["_id"])
 
-            # VALIDACIÓN CRÍTICA: Verificar que la orden tenga productos antes de finalizar
             order_details_collection = get_collection("order_details")
             active_products = order_details_collection.count_documents({
                 "id_order": order_id,
@@ -223,7 +212,6 @@ async def update_order_status(order_id: str, order_status_id: str = None, reques
             if active_products == 0:
                 return {"success": False, "message": "No puedes finalizar una orden vacía. Agrega al menos un producto antes de finalizar.", "data": None}
 
-        # Para admins, validar que el estado existe si se proporciona
         if order_status_id:
             if not ObjectId.is_valid(order_status_id):
                 return {"success": False, "message": "ID de estado inválido", "data": None}
@@ -232,7 +220,7 @@ async def update_order_status(order_id: str, order_status_id: str = None, reques
             if not status_exists:
                 return {"success": False, "message": "Estado de orden no encontrado", "data": None}
 
-            # VALIDACIÓN PARA ADMINS: También verificar productos para ciertos estados
+
             status_description = status_exists.get("description", "").lower()
             states_requiring_products = ["ordered", "shipped", "delivered", "processing"]
 
@@ -246,7 +234,7 @@ async def update_order_status(order_id: str, order_status_id: str = None, reques
                 if active_products == 0:
                     return {"success": False, "message": f"No se puede cambiar a '{status_description}' una orden vacía. La orden debe tener al menos un producto.", "data": None}
 
-        # Crear nuevo registro de estado
+
         status_data = {
             "id_order": order_id,  # Ya viene como string del parámetro
             "id_status": order_status_id,  # Ya viene como string del parámetro
