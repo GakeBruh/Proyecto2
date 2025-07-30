@@ -81,11 +81,11 @@ async def deactivate_catalog_type(catalog_type_id: str) -> CatalogType:
             )
 
         result = coll.update_one(
-            {"_id": ObjectId(catalog_type_id)},
-            {"$set": {"active": False}}
+        {"_id": ObjectId(catalog_type_id)},
+        {"$set": {"active": False}}
         )
 
-        if result.modified_count == 0:
+        if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Tipo de catálogo no encontrado")
 
         return await get_catalog_type_by_id(catalog_type_id)
