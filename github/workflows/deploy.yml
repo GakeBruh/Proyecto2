@@ -1,18 +1,15 @@
-name: Deploy to Rallway
+name: Deploy to Railway
 
 on:
-    push:
-        branches: [main]
+  push:
+    branches: [main]
 
 jobs:
-    helloworld:
-        runs-on: ubuntu-latest
+  helloworld:
+    runs-on: ubuntu-latest
 
+    steps:
+      - uses: actions/checkout@v4
 
-        steps:
-        - uses action/checkout@v4
-
-        - name: Imprimir en consola
-        run:
-          echo "hello World, GITHUB ACTIONS"
-          
+      - name: Imprimir en consola
+        run: echo "hello World, GITHUB ACTIONS"
