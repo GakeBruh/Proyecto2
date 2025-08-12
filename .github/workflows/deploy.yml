@@ -38,4 +38,5 @@ jobs:
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: python -c "from main import app; print('FASTAPI app imported succesfully')"
+        run:
+          pytest -v test_database.py
