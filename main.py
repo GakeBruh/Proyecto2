@@ -8,6 +8,8 @@ from models.users import User
 from models.login import Login
 
 from utils.security import validate_token, validate_admin
+from utils.mongodb import test_connection
+
 
 from routes.catalogtypes import router as catalogtypes_router
 from routes.catalogs import router as catalogs_router
@@ -16,6 +18,7 @@ from routes.order_statuses import router as order_statuses_router
 from routes.orders import router as orders_router
 from routes.order_details import router as order_details_router
 from routes.inventory import router as inventory_router
+
 
 app = FastAPI()
 
@@ -36,18 +39,20 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    try
-        return{
+    try:
+        return {
             "status": "healthy",
             "timestamp": "2025-08-10",
-            "service" : "kakarikostore-api",
-            "enviroment": "production"
+            "service": "kakarikostore-api",
+            "environment": "production"
         }
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+
 
 @app.get("/ready")
 def rediness_check():
     try:
-        from.utils.mongodb import test_connection
         db_status = test_connection()
         return{
             "status" : "ready" if db_status else "not_ready",
