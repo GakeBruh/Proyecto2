@@ -13,3 +13,30 @@ jobs:
 
       - name: Imprimir en consola
         run: echo "hello World, GITHUB ACTIONS"
+  
+  test:
+      needs : helloworld
+      runs-on: ubuntu-latest
+
+      steps:
+        - uses: actions/checkout@v4
+
+        -name : Set up python 3.13.3
+          usesL actions/setup-python@v4
+          with
+            python-version:'3.13.3'
+                 
+        -name: install libraries
+        run: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+        
+        -name: test_FastApi_imports
+        env:
+          MONGODB_URI: ${{secrets.MONGODB_URI}}
+          DATABASE_NAME: ${{secrets.DATABASE_NAME}
+          FIREBASE_API_KEY: ${{secrets.FIREBASE_API_KEY}}
+          SECRET_KEY: ${{secrets.SECRET_KEY}}
+          RAILWAY_TOKEN:  ${{secrets.RAILWAY_TOKEN}}
+        run:
+          python -c "from main import app; print('FASTAPI app imported succesfully')"

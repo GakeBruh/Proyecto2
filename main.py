@@ -34,6 +34,29 @@ logger = logging.getLogger(__name__)
 def read_root():
     return {"version": "0.0.0"}
 
+@app.get("/health")
+def health_check():
+    try
+        return{
+            "status": "healthy",
+            "timestamp": "2025-08-10",
+            "service" : "kakarikostore-api",
+            "enviroment": "production"
+        }
+
+@app.get("/ready")
+def rediness_check():
+    try:
+        from.utils.mongodb import test_connection
+        db_status = test_connection()
+        return{
+            "status" : "ready" if db_status else "not_ready",
+            "database": "connected" if db_status else "disconnected",
+            "service": "kakarikostore-api"
+        }
+    except Exception as e:
+        return{"status": "not_ready", "error": str(e)}
+
 @app.post("/users")
 async def create_user_endpoint(user: User) -> User:
     return await create_user(user)
