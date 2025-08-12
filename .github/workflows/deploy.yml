@@ -39,4 +39,4 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run:
-          pytest -v test_database.py
+          pytest utils/test_database.py
