@@ -33,6 +33,7 @@ jobs:
         
       - name: test_FastApi_imports
         env:
+          PYTHONPATH: ${{ github.workspace }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
