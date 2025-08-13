@@ -22,6 +22,15 @@ from routes.inventory import router as inventory_router
 
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 app.include_router(catalogtypes_router)
 app.include_router(catalogs_router)
 app.include_router(box_details_router)
