@@ -1,76 +1,56 @@
 from bson import ObjectId
 
 def get_catalog_type_pipeline() -> list:
+    """
+    Pipeline para obtener todos los tipos de catálogo con conteo de productos asociados.
+    """
     return [
+        # Convertir _id a string para usar en el lookup
+        {"$addFields": {"id": {"$toString": "$_id"}}},
+
+        # Hacer lookup en la colección 'catalogs' para traer los productos asociados
         {
-            "$addFields": {
-                "id": {"$toString": "$_id"}
-            }
-        },{
             "$lookup": {
                 "from": "catalogs",
                 "localField": "id",
                 "foreignField": "id_catalog_type",
-                "as": "result"
+                "as": "products"
             }
-        },{
-            "$group": {
-                "_id": {
-                    "id": "$id",
-                    "description": "$description",
-                    "active": "$active"
-                },
-                "number_of_products": {
-                    "$sum": {"$size": "$result"}
-                }
-            }
-        },{
-            "$project": {
-                "_id": 0,
-                "id": "$_id.id",
-                "description": "$_id.description",
-                "active": "$_id.active",
-                "number_of_products": 1
-            }
-        }
+        },
+
+        # Contar el número de productos
+        {"$addFields": {"number_of_products": {"$size": "$products"}}},
+
+        # Seleccionar solo los campos que necesitamos
+        {"$project": {"_id": 0, "id": 1, "description": 1, "active": 1, "number_of_products": 1}}
     ]
 
 
 def validate_type_is_assigned_pipeline(id: str) -> list:
+    """
+    Pipeline para validar si un tipo de catálogo tiene productos asignados,
+    y obtener el conteo de productos asociados.
+    """
     return [
+        # Filtrar por el id específico
+        {"$match": {"_id": ObjectId(id)}},
+
+        # Convertir _id a string para el lookup
+        {"$addFields": {"id": {"$toString": "$_id"}}},
+
+        # Traer productos asociados
         {
-            "$match": {
-                "_id": ObjectId(id),
-            }
-        },{
-            "$addFields": {
-                "id": {"$toString": "$_id"}
-            }
-        },{
             "$lookup": {
                 "from": "catalogs",
                 "localField": "id",
                 "foreignField": "id_catalog_type",
-                "as": "result"
+                "as": "products"
             }
-        },{
-            "$group": {
-                "_id": {
-                    "id": "$id",
-                    "description": "$description",
-                    "active": "$active"
-                },
-                "number_of_products": {
-                    "$sum": {"$size": "$result"}
-                }
-            }
-        },{
-            "$project": {
-                "_id": 0,
-                "id": "$_id.id",
-                "description": "$_id.description",
-                "active": "$_id.active",
-                "number_of_products": 1
-            }
-        }
+        },
+
+        # Contar productos
+        {"$addFields": {"number_of_products": {"$size": "$products"}}},
+
+        # Proyección final
+        {"$project": {"_id": 0, "id": 1, "description": 1, "active": 1, "number_of_products": 1}}
     ]
