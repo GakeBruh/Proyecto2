@@ -49,7 +49,7 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
           FIREBASE_CREDENTIALS_BASE64: ${{ secrets.FIREBASE_CREDENTIALS_BASE64 }}
-        run: pytest -v utils/test_database.py
+        run: pytest -v test_database.py
 
   deploy:
     needs: test
