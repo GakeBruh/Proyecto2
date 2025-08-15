@@ -6,14 +6,27 @@ def get_catalog_type_pipeline() -> list:
             "$addFields": {
                 "id": {"$toString": "$_id"}
             }
-        },{
+        },
+        {
             "$lookup": {
                 "from": "catalogs",
-                "localField": "id",
-                "foreignField": "id_catalog_type",
+                "let": {"catalogTypeId": "$id"},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$and": [
+                                    {"$eq": ["$id_catalog_type", "$$catalogTypeId"]},
+                                    {"$eq": ["$active", True]}
+                                ]
+                            }
+                        }
+                    }
+                ],
                 "as": "result"
             }
-        },{
+        },
+        {
             "$group": {
                 "_id": {
                     "id": "$id",
@@ -24,7 +37,8 @@ def get_catalog_type_pipeline() -> list:
                     "$sum": {"$size": "$result"}
                 }
             }
-        },{
+        },
+        {
             "$project": {
                 "_id": 0,
                 "id": "$_id.id",
@@ -34,6 +48,7 @@ def get_catalog_type_pipeline() -> list:
             }
         }
     ]
+
 
 
 def validate_type_is_assigned_pipeline(id: str) -> list:
