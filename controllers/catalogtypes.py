@@ -67,7 +67,7 @@ async def update_catalog_type(catalog_type_id: str, catalog_type: CatalogType) -
         raise HTTPException(status_code=500, detail=f"Error updating catalog type: {str(e)}")
 
 
-async def deactivate_or_delete_catalog_type(catalog_type_id: str) -> dict:
+async def deactivate_catalog_type(catalog_type_id: str) -> dict:
     try:
         pipeline = validate_type_is_assigned_pipeline(catalog_type_id)
         assigned = list(coll.aggregate(pipeline))
