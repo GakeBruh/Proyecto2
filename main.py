@@ -51,7 +51,7 @@ def health_check():
     try:
         return {
             "status": "healthy",
-            "timestamp": "2025-08-10",
+            "timestamp": "2025-08-15",
             "service": "kakarikostore-api",
             "environment": "production"
         }
