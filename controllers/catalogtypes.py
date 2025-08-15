@@ -72,12 +72,10 @@ async def deactivate_catalog_type(catalog_type_id: str) -> dict:
         pipeline = validate_type_is_assigned_pipeline(catalog_type_id)
         assigned = list(coll.aggregate(pipeline))
 
-        if not assigned:
+        if assigned is None:
             raise HTTPException(status_code=404, detail="Catalog type not found")
 
-        number_of_products = assigned[0].get("number_of_products", 0)
-
-        if number_of_products > 0:
+        if assigned[0]["number_of_products"] > 0:
             coll.update_one(
                 {"_id": ObjectId(catalog_type_id)},
                 {"$set": {"active": False}}
