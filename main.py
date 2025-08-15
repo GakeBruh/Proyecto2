@@ -95,4 +95,6 @@ async def example_user(user_data: dict = Depends(validate_token)):
     }
 
 if __name__ == "__main__":
+    print("Health check:", health_check())
+    print("Readiness check:", rediness_check())
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
